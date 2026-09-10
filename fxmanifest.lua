@@ -9,7 +9,7 @@ repository 'https://github.com/it-petrfila/pt_mdt'
 
 shared_scripts {
     '@es_extended/imports.lua',
-    '@ox_lib/package.lua',
+    '@ox_lib/init.lua',
     'shared/config.lua',
     'shared/penal_code.lua',
     'locales/*.lua',
