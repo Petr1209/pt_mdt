@@ -11,11 +11,13 @@ RegisterNetEvent('esx:setJob', function(job)
 end)
 
 CreateThread(function()
-    while not ESX.IsPlayerLoaded() do
-        Wait(100)
+    while not ESX.PlayerLoaded do
+        Wait(500)
     end
     local playerData = ESX.GetPlayerData()
-    playerJob = playerData.job
+    if playerData and playerData.job then
+        playerJob = playerData.job
+    end
 end)
 
 -- Kontrola, zda hráč sedí v policejním autě
@@ -30,7 +32,19 @@ end
 
 -- Kontrola oprávnění a podmínek otevření
 function CanOpenMDT()
-    if not playerJob or not Config.AllowedJobs[playerJob.name] then
+    local playerData = ESX.GetPlayerData()
+    local currentJob = (playerData and playerData.job) or playerJob
+    local isAllowed = currentJob and Config.AllowedJobs[currentJob.name]
+
+    -- Povolit adminům pro testování
+    if not isAllowed and Config.AllowAdminBypass then
+        local group = (playerData and playerData.group)
+        if group == 'admin' or group == 'superadmin' then
+            isAllowed = true
+        end
+    end
+
+    if not isAllowed then
         return false, _U('not_authorized')
     end
 

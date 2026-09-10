@@ -9,6 +9,9 @@ Config.AllowedJobs = {
     ['sheriff'] = { label = 'Sheriff Office', badge = 'LSSD', canIssueWarrant = true, canSendToJail = true }
 }
 
+-- Povolit přístup administrátorům pro testování a správu (i když nemají job police)
+Config.AllowAdminBypass = true
+
 -- Otevírání MDT
 Config.OpenOptions = {
     Command = 'mdt',                   -- Příkaz do chatu (/mdt)

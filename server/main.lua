@@ -8,6 +8,13 @@ function IsPlayerAllowed(src)
     if job and Config.AllowedJobs[job] then
         return true, xPlayer
     end
+    -- Povolit adminům pokud je zapnutý bypass v configu
+    if Config.AllowAdminBypass then
+        local group = (xPlayer.getGroup and xPlayer.getGroup()) or xPlayer.group
+        if group == 'admin' or group == 'superadmin' then
+            return true, xPlayer
+        end
+    end
     return false, xPlayer
 end
 
@@ -41,16 +48,17 @@ lib.callback.register('pt_mdt:getInitialData', function(src)
     local allowed, xPlayer = IsPlayerAllowed(src)
     if not allowed then return nil end
 
-    local jobInfo = Config.AllowedJobs[xPlayer.job.name]
+    local jobName = xPlayer.job and xPlayer.job.name or 'police'
+    local jobInfo = Config.AllowedJobs[jobName] or { label = 'Police Dept', badge = 'LSPD', canIssueWarrant = true, canSendToJail = true }
     local officerData = {
         name = xPlayer.getName(),
         identifier = xPlayer.identifier,
-        job = xPlayer.job.name,
-        jobLabel = xPlayer.job.label,
-        grade = xPlayer.job.grade_label,
-        badge = jobInfo and jobInfo.badge or 'LSPD',
-        canIssueWarrant = jobInfo and jobInfo.canIssueWarrant or false,
-        canSendToJail = jobInfo and jobInfo.canSendToJail or false
+        job = jobName,
+        jobLabel = xPlayer.job and xPlayer.job.label or 'Police Officer',
+        grade = xPlayer.job and xPlayer.job.grade_label or 'Officer',
+        badge = jobInfo.badge or 'LSPD',
+        canIssueWarrant = jobInfo.canIssueWarrant or true,
+        canSendToJail = jobInfo.canSendToJail or true
     }
 
     -- Počet hlídek ve službě
