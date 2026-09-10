@@ -72,5 +72,8 @@ Locales['en'] = {
     need_item_or_car = 'You must have a police tablet or be inside a police vehicle to access MDT.',
     fine_issued_msg = 'A fine of $%s was issued for incident: %s',
     jail_sent_msg = 'Suspect was sentenced to %s months in prison.',
-    unknown = 'Unknown'
+    unknown = 'Unknown',
+    live_map = 'Tactical Map',
+    patrol_units = 'Units On Duty',
+    set_gps_unit = 'Set GPS to Unit'
 }

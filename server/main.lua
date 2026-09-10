@@ -281,3 +281,36 @@ lib.callback.register('pt_mdt:deleteBulletin', function(src, id)
     local affected = MySQL.update.await('DELETE FROM pt_mdt_bulletins WHERE id = ?', { id })
     return affected > 0
 end)
+
+-- Získání živých pozic státních složek pro taktickou GPS mapu
+lib.callback.register('pt_mdt:getLiveUnits', function(src)
+    local allowed = IsPlayerAllowed(src)
+    if not allowed then return {} end
+
+    local units = {}
+    local players = ESX.GetExtendedPlayers()
+    for _, ply in pairs(players) do
+        local job = ply.job and ply.job.name
+        if job and (Config.AllowedJobs[job] or job == 'ambulance') then
+            local ped = GetPlayerPed(ply.source)
+            if ped and DoesEntityExist(ped) then
+                local coords = GetEntityCoords(ped)
+                local heading = GetEntityHeading(ped)
+                local inVeh = GetVehiclePedIsIn(ped, false) ~= 0
+
+                table.insert(units, {
+                    id = ply.source,
+                    name = ply.getName(),
+                    job = job,
+                    jobLabel = ply.job.label,
+                    grade = ply.job.grade_label,
+                    coords = { x = coords.x, y = coords.y, z = coords.z },
+                    heading = math.floor(heading),
+                    inVehicle = inVeh
+                })
+            end
+        end
+    end
+
+    return units
+end)

@@ -136,3 +136,10 @@ RegisterNUICallback('setWaypoint', function(data, cb)
     end
     cb('ok')
 end)
+
+-- Živé jednotky pro taktickou mapu
+RegisterNUICallback('getLiveUnits', function(_, cb)
+    lib.callback('pt_mdt:getLiveUnits', false, function(units)
+        cb(units or {})
+    end)
+end)

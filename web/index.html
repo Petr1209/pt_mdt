@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <!-- MDT Tablet Window -->
     <div class="tablet-wrapper">
         <!-- Header -->
         <header class="tablet-header">
@@ -39,6 +40,10 @@
                 <div class="nav-item active" data-tab="dashboard">
                     <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                     <span data-i18n="dashboard">Přehled</span>
+                </div>
+                <div class="nav-item" data-tab="map">
+                    <svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                    <span data-i18n="live_map">Taktická mapa</span>
                 </div>
                 <div class="nav-item" data-tab="citizens">
                     <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -119,17 +124,35 @@
                                 <h2 data-i18n="bulletin_board">Policejní nástěnka</h2>
                                 <button class="btn-primary" id="btn-add-bulletin" data-i18n="add_bulletin">+ Přidat oznámení</button>
                             </div>
-                            <div class="item-list" id="bulletin-list">
-                                <!-- Dynamicky vkládaná oznámení -->
-                            </div>
+                            <div class="item-list" id="bulletin-list"></div>
                         </div>
 
                         <div class="panel-card">
                             <div class="panel-header">
                                 <h2 data-i18n="recent_incidents">Poslední incidenty</h2>
                             </div>
-                            <div class="item-list" id="dashboard-recent-incidents">
-                                <!-- Dynamicky vkládané incidenty -->
+                            <div class="item-list" id="dashboard-recent-incidents"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Live Tactical Map -->
+                <div class="tab-view" id="tab-map">
+                    <div class="tactical-map-grid">
+                        <div class="map-viewport">
+                            <div class="map-grid-overlay"></div>
+                            <div class="map-radar-scan"></div>
+                            <div class="map-canvas-container" id="map-canvas">
+                                <!-- Dynamické jednotky -->
+                            </div>
+                        </div>
+                        <div class="panel-card" style="height: 100%;">
+                            <div class="panel-header">
+                                <h2 data-i18n="patrol_units">Jednotky v terénu</h2>
+                                <button class="btn-secondary" id="btn-refresh-map" style="padding: 4px 10px; font-size: 12px;">🔄 Obnovit</button>
+                            </div>
+                            <div class="item-list" id="map-units-roster" style="flex: 1; max-height: calc(88vh - 200px);">
+                                <!-- Seznam jednotek -->
                             </div>
                         </div>
                     </div>
@@ -145,7 +168,13 @@
                         <button class="btn-primary" id="btn-citizen-search" data-i18n="search">Hledat</button>
                     </div>
 
-                    <div id="citizen-search-results" class="item-list" style="margin-bottom: 24px;"></div>
+                    <div id="citizen-search-results" class="item-list" style="margin-bottom: 24px;">
+                        <div style="color: var(--text-muted); padding: 40px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: var(--accent-cyan);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            <p style="font-size: 15px; font-weight: 600; color: var(--text-primary);">Policejní registr občanů NCIC</p>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Zadejte jméno nebo rodné číslo pro vyhledání osoby a zobrazení trestního rejstříku.</p>
+                        </div>
+                    </div>
 
                     <div id="citizen-detail-section" class="detail-grid" style="display: none;">
                         <div class="profile-card">
@@ -209,7 +238,13 @@
                         <button class="btn-primary" id="btn-vehicle-search" data-i18n="search">Hledat</button>
                     </div>
 
-                    <div id="vehicle-search-results" class="item-list" style="margin-bottom: 24px;"></div>
+                    <div id="vehicle-search-results" class="item-list" style="margin-bottom: 24px;">
+                        <div style="color: var(--text-muted); padding: 40px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: var(--accent-cyan);"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                            <p style="font-size: 15px; font-weight: 600; color: var(--text-primary);">Registr motorových vozidel DMV</p>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Vyhledejte vozidlo podle SPZ pro kontrolu majitele a statusu odcizení.</p>
+                        </div>
+                    </div>
 
                     <div id="vehicle-detail-section" class="panel-card" style="display: none;">
                         <div class="panel-header">
@@ -427,6 +462,41 @@
                 <button class="btn-secondary modal-close" data-i18n="cancel">Zrušit</button>
                 <button class="btn-primary" id="btn-save-bolo" data-i18n="save">Vyhlásit BOLO</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Floating Police In-Vehicle Speed Radar HUD -->
+    <div id="police-radar-hud" class="radar-container">
+        <div class="radar-header">
+            <span class="radar-title">STALKER DUAL DSR RADAR</span>
+            <span class="radar-status" id="radar-power-led">RADAR ACTIVE</span>
+        </div>
+        <div class="radar-body">
+            <!-- Front Antenna -->
+            <div class="radar-antenna-section">
+                <div class="radar-label">FRONT TARGET</div>
+                <div class="radar-speed-display" id="radar-front-speed">000</div>
+                <div class="radar-plate-display" id="radar-front-plate">NO TARGET</div>
+            </div>
+            <!-- Patrol & Lock -->
+            <div class="radar-center-section">
+                <div class="radar-label">PATROL SPEED</div>
+                <div class="radar-speed-display patrol" id="radar-patrol-speed">000</div>
+                <div class="radar-lock-box" id="radar-lock-box">
+                    <div class="radar-label">FAST LOCK</div>
+                    <div class="radar-lock-speed" id="radar-lock-speed">---</div>
+                </div>
+            </div>
+            <!-- Rear Antenna -->
+            <div class="radar-antenna-section">
+                <div class="radar-label">REAR TARGET</div>
+                <div class="radar-speed-display" id="radar-rear-speed">000</div>
+                <div class="radar-plate-display" id="radar-rear-plate">NO TARGET</div>
+            </div>
+        </div>
+        <div class="radar-footer">
+            <span>[NUM8] LOCK TARGET</span>
+            <span>[NUM9] /radar ON/OFF</span>
         </div>
     </div>
 

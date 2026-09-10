@@ -29,7 +29,8 @@ server_scripts {
 client_scripts {
     'client/main.lua',
     'client/animation.lua',
-    'client/nui.lua'
+    'client/nui.lua',
+    'client/radar.lua'
 }
 
 ui_page 'web/index.html'

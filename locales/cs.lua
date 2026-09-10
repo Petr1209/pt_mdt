@@ -72,5 +72,8 @@ Locales['cs'] = {
     need_item_or_car = 'Pro přístup k MDT musíte vlastnit policejní tablet nebo sedět v policejním voze.',
     fine_issued_msg = 'Byla vystavena pokuta $%s za incident: %s',
     jail_sent_msg = 'Podezřelý byl poslán do vězení na %s měsíců.',
-    unknown = 'Neznámé'
+    unknown = 'Neznámé',
+    live_map = 'Taktická mapa',
+    patrol_units = 'Jednotky v terénu',
+    set_gps_unit = 'Zaměřit jednotku GPS'
 }

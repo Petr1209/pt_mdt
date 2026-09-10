@@ -55,6 +55,12 @@ function switchTab(tabName) {
         view.classList.toggle('active', view.id === `tab-${tabName}`);
     });
 
+    if (tabName === 'map') {
+        startTacticalMapPolling();
+    } else {
+        stopTacticalMapPolling();
+    }
+
     // Načtení dat podle vybraného tabu
     if (tabName === 'incidents') loadIncidents();
     if (tabName === 'warrants') loadWarrants();
@@ -86,12 +92,21 @@ function openMDT(data) {
     renderRecentIncidents(data.recentIncidents || []);
     populatePenalCodeSelect();
 
-    document.body.style.display = 'block';
+    const tabletWrapper = document.querySelector('.tablet-wrapper');
+    if (tabletWrapper) {
+        tabletWrapper.style.display = 'flex';
+        tabletWrapper.classList.add('open');
+    }
     switchTab('dashboard');
 }
 
 function closeMDT() {
-    document.body.style.display = 'none';
+    const tabletWrapper = document.querySelector('.tablet-wrapper');
+    if (tabletWrapper) {
+        tabletWrapper.style.display = 'none';
+        tabletWrapper.classList.remove('open');
+    }
+    stopTacticalMapPolling();
     closeAllModals();
     postNUI('close');
 }
@@ -102,8 +117,26 @@ window.addEventListener('message', (event) => {
     if (item.action === 'open') {
         openMDT(item.data);
     } else if (item.action === 'close') {
-        document.body.style.display = 'none';
+        const tabletWrapper = document.querySelector('.tablet-wrapper');
+        if (tabletWrapper) {
+            tabletWrapper.style.display = 'none';
+            tabletWrapper.classList.remove('open');
+        }
+        stopTacticalMapPolling();
         closeAllModals();
+    } else if (item.action === 'toggleRadar') {
+        const radar = document.getElementById('police-radar-hud');
+        if (radar) {
+            if (item.show) {
+                radar.classList.add('active');
+            } else {
+                radar.classList.remove('active');
+            }
+        }
+    } else if (item.action === 'updateRadar') {
+        updateRadarDisplay(item.data);
+    } else if (item.action === 'lockRadar') {
+        applyRadarLock(item.locked, item.lockedData);
     }
 });
 
@@ -729,6 +762,163 @@ async function loadDispatch() {
         });
         list.appendChild(item);
     });
+}
+
+// ==========================================
+// 9. TACTICAL LIVE GPS MAP
+// ==========================================
+let mapPollingInterval = null;
+
+function startTacticalMapPolling() {
+    loadTacticalMap();
+    if (!mapPollingInterval) {
+        mapPollingInterval = setInterval(loadTacticalMap, 3000);
+    }
+}
+
+function stopTacticalMapPolling() {
+    if (mapPollingInterval) {
+        clearInterval(mapPollingInterval);
+        mapPollingInterval = null;
+    }
+}
+
+async function loadTacticalMap() {
+    const units = await postNUI('getLiveUnits');
+    renderTacticalUnits(units || []);
+}
+
+// GTA V World Coordinates to Map Container Percentage
+function worldToMapPercent(x, y) {
+    const minX = -4000;
+    const maxX = 4500;
+    const minY = -4000;
+    const maxY = 8000;
+
+    const clampedX = Math.max(minX, Math.min(maxX, x));
+    const clampedY = Math.max(minY, Math.min(maxY, y));
+
+    const leftPercent = ((clampedX - minX) / (maxX - minX)) * 100;
+    const topPercent = ((maxY - clampedY) / (maxY - minY)) * 100;
+
+    return {
+        left: Math.max(2, Math.min(98, leftPercent)),
+        top: Math.max(2, Math.min(98, topPercent))
+    };
+}
+
+function renderTacticalUnits(units) {
+    const canvas = document.getElementById('map-canvas');
+    const roster = document.getElementById('map-units-roster');
+    if (!canvas || !roster) return;
+
+    canvas.innerHTML = '';
+    roster.innerHTML = '';
+
+    if (!units || units.length === 0) {
+        roster.innerHTML = `<div style="color: var(--text-muted); padding: 16px; text-align: center;">Žádné aktivní hlídky v terénu.</div>`;
+        return;
+    }
+
+    units.forEach(unit => {
+        const coords = unit.coords || { x: 0, y: 0 };
+        const pos = worldToMapPercent(coords.x, coords.y);
+        const isEMS = unit.job === 'ambulance';
+
+        // 1. Značka na mapě
+        const marker = document.createElement('div');
+        marker.className = 'unit-marker';
+        marker.style.left = `${pos.left}%`;
+        marker.style.top = `${pos.top}%`;
+        marker.title = `${unit.name} (${unit.jobLabel} - ${unit.grade})`;
+
+        const dotClass = isEMS ? 'unit-icon-dot ems' : 'unit-icon-dot';
+        const vehIcon = unit.inVehicle ? '🚔' : '👮';
+
+        marker.innerHTML = `
+            <div class="${dotClass}" style="transform: rotate(${unit.heading || 0}deg);">
+                <div style="width: 4px; height: 4px; background: white; border-radius: 50%;"></div>
+            </div>
+            <div class="unit-label-tag">${vehIcon} ${escapeHtml(unit.name)}</div>
+        `;
+
+        marker.addEventListener('click', () => {
+            postNUI('setWaypoint', { x: coords.x, y: coords.y });
+        });
+
+        canvas.appendChild(marker);
+
+        // 2. Karta v postranním seznamu jednotek
+        const card = document.createElement('div');
+        card.className = 'list-item';
+        card.style.flexDirection = 'column';
+        card.style.alignItems = 'stretch';
+        card.style.gap = '8px';
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="${dotClass}" style="width: 10px; height: 10px;"></div>
+                    <strong style="color: var(--text-primary); font-size: 13px;">${escapeHtml(unit.name)}</strong>
+                </div>
+                <span class="tag-badge ${isEMS ? 'red' : 'blue'}" style="font-size: 10px;">${escapeHtml(unit.jobLabel)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary);">
+                <span>Hodnost: <strong style="color: var(--text-primary);">${escapeHtml(unit.grade)}</strong></span>
+                <span>Status: ${unit.inVehicle ? '🚔 Ve voze' : '🚶 Pěší'}</span>
+            </div>
+            <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; align-self: flex-end; margin-top: 4px;">
+                🎯 ${t('set_waypoint', 'Zaměřit GPS')}
+            </button>
+        `;
+
+        card.querySelector('button').addEventListener('click', () => {
+            postNUI('setWaypoint', { x: coords.x, y: coords.y });
+        });
+
+        roster.appendChild(card);
+    });
+}
+
+const btnRefreshMap = document.getElementById('btn-refresh-map');
+if (btnRefreshMap) {
+    btnRefreshMap.addEventListener('click', loadTacticalMap);
+}
+
+// ==========================================
+// 10. POLICE IN-VEHICLE SPEED RADAR
+// ==========================================
+function updateRadarDisplay(data) {
+    if (!data) return;
+    const patrolEl = document.getElementById('radar-patrol-speed');
+    const frontSpeedEl = document.getElementById('radar-front-speed');
+    const frontPlateEl = document.getElementById('radar-front-plate');
+    const rearSpeedEl = document.getElementById('radar-rear-speed');
+    const rearPlateEl = document.getElementById('radar-rear-plate');
+    const lockSpeedEl = document.getElementById('radar-lock-speed');
+
+    if (patrolEl) patrolEl.textContent = String(data.patrolSpeed || 0).padStart(3, '0');
+    if (frontSpeedEl) frontSpeedEl.textContent = String(data.frontSpeed || 0).padStart(3, '0');
+    if (frontPlateEl) frontPlateEl.textContent = data.frontPlate && data.frontPlate !== '---' ? data.frontPlate : 'NO TARGET';
+    if (rearSpeedEl) rearSpeedEl.textContent = String(data.rearSpeed || 0).padStart(3, '0');
+    if (rearPlateEl) rearPlateEl.textContent = data.rearPlate && data.rearPlate !== '---' ? data.rearPlate : 'NO TARGET';
+
+    if (data.locked && data.lockedData && lockSpeedEl) {
+        lockSpeedEl.textContent = String(data.lockedData.speed || 0).padStart(3, '0');
+    }
+}
+
+function applyRadarLock(locked, lockedData) {
+    const lockBox = document.getElementById('radar-lock-box');
+    const lockSpeedEl = document.getElementById('radar-lock-speed');
+    if (!lockBox || !lockSpeedEl) return;
+
+    if (locked && lockedData) {
+        lockBox.classList.add('locked');
+        lockSpeedEl.textContent = String(lockedData.speed || 0).padStart(3, '0');
+    } else {
+        lockBox.classList.remove('locked');
+        lockSpeedEl.textContent = '---';
+    }
 }
 
 // Nástěnka - přidání
