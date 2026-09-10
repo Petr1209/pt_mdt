@@ -123,6 +123,19 @@ function IsPlayerAllowed(src)
     return false, xPlayer
 end
 
+-- Registrace použitelné položky v ESX
+ESX.RegisterUsableItem(Config.ItemName, function(source)
+    local allowed, xPlayer = IsPlayerAllowed(source)
+    if not allowed then
+        TriggerClientEvent('ox_lib:notify', source, {
+            type = 'error',
+            description = _U('not_authorized')
+        })
+        return
+    end
+    TriggerClientEvent('pt_mdt:openMDT', source, true)
+end)
+
 -- Registrace použitelné položky v ox_inventory
 CreateThread(function()
     Wait(500)
