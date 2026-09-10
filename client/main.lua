@@ -77,7 +77,7 @@ function OpenMDT(fromItem)
 
     lib.callback('pt_mdt:getInitialData', false, function(data)
         if not data then
-            lib.notify({ type = 'error', description = _U('not_authorized') })
+            lib.notify({ type = 'error', description = 'Chyba: Data MDT se nepodařilo ze serveru načíst!' })
             return
         end
 

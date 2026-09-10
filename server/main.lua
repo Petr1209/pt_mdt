@@ -1,5 +1,110 @@
 local ESX = exports['es_extended']:getSharedObject()
 
+-- Automatická inicializace databázových tabulek při startu skriptu
+MySQL.ready(function()
+    print('^4[pt_mdt]^7 Kontrola a vytváření databázových tabulek...')
+
+    local schema = {
+        [[
+        CREATE TABLE IF NOT EXISTS `pt_mdt_incidents` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `title` VARCHAR(255) NOT NULL,
+            `description` LONGTEXT DEFAULT NULL,
+            `creator_identifier` VARCHAR(64) NOT NULL,
+            `creator_name` VARCHAR(128) NOT NULL,
+            `suspects` LONGTEXT DEFAULT '[]',
+            `officers` LONGTEXT DEFAULT '[]',
+            `civilians` LONGTEXT DEFAULT '[]',
+            `evidence` LONGTEXT DEFAULT '[]',
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            INDEX `idx_creator` (`creator_identifier`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ]],
+        [[
+        CREATE TABLE IF NOT EXISTS `pt_mdt_warrants` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `suspect_identifier` VARCHAR(64) NOT NULL,
+            `suspect_name` VARCHAR(128) NOT NULL,
+            `reason` TEXT NOT NULL,
+            `creator_identifier` VARCHAR(64) NOT NULL,
+            `creator_name` VARCHAR(128) NOT NULL,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'active',
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `expires_at` TIMESTAMP NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            INDEX `idx_suspect` (`suspect_identifier`),
+            INDEX `idx_status` (`status`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ]],
+        [[
+        CREATE TABLE IF NOT EXISTS `pt_mdt_bolos` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `type` VARCHAR(20) NOT NULL DEFAULT 'person',
+            `title` VARCHAR(255) NOT NULL,
+            `plate` VARCHAR(16) DEFAULT NULL,
+            `suspect_name` VARCHAR(128) DEFAULT NULL,
+            `description` TEXT NOT NULL,
+            `creator_name` VARCHAR(128) NOT NULL,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'active',
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            INDEX `idx_bolo_status` (`status`),
+            INDEX `idx_bolo_type` (`type`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ]],
+        [[
+        CREATE TABLE IF NOT EXISTS `pt_mdt_bulletins` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `title` VARCHAR(255) NOT NULL,
+            `message` TEXT NOT NULL,
+            `author` VARCHAR(128) NOT NULL,
+            `pinned` TINYINT(1) NOT NULL DEFAULT 0,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ]],
+        [[
+        CREATE TABLE IF NOT EXISTS `pt_mdt_citizen_data` (
+            `identifier` VARCHAR(64) NOT NULL,
+            `avatar_url` TEXT DEFAULT NULL,
+            `notes` TEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`identifier`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ]],
+        [[
+        CREATE TABLE IF NOT EXISTS `pt_mdt_vehicle_data` (
+            `plate` VARCHAR(16) NOT NULL,
+            `stolen` TINYINT(1) NOT NULL DEFAULT 0,
+            `notes` TEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`plate`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ]],
+        [[
+        CREATE TABLE IF NOT EXISTS `pt_mdt_convictions` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `identifier` VARCHAR(64) NOT NULL,
+            `incident_id` INT(11) DEFAULT NULL,
+            `charge_name` VARCHAR(255) NOT NULL,
+            `fine` INT(11) NOT NULL DEFAULT 0,
+            `prison` INT(11) NOT NULL DEFAULT 0,
+            `officer_name` VARCHAR(128) NOT NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            INDEX `idx_convict_identifier` (`identifier`),
+            INDEX `idx_convict_incident` (`incident_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ]]
+    }
+
+    for _, query in ipairs(schema) do
+        MySQL.query.await(query)
+    end
+    print('^2[pt_mdt]^7 Všechny databázové tabulky byly úspěšně zkontrolovány a vytvořeny!')
+end)
+
 -- Kontrola oprávnění hráče
 function IsPlayerAllowed(src)
     local xPlayer = ESX.GetPlayerFromId(src)
@@ -46,7 +151,10 @@ end)
 -- Callback pro získání počátečních dat (přihlášený policista, statistiky, lokalizace, sazebník)
 lib.callback.register('pt_mdt:getInitialData', function(src)
     local allowed, xPlayer = IsPlayerAllowed(src)
-    if not allowed then return nil end
+    if not allowed then
+        print(('[pt_mdt] Hráč ID %s nemá oprávnění k MDT'):format(src))
+        return nil
+    end
 
     local jobName = xPlayer.job and xPlayer.job.name or 'police'
     local jobInfo = Config.AllowedJobs[jobName] or { label = 'Police Dept', badge = 'LSPD', canIssueWarrant = true, canSendToJail = true }
@@ -70,16 +178,35 @@ lib.callback.register('pt_mdt:getInitialData', function(src)
         end
     end
 
-    -- Statistiky
-    local warrantCount = MySQL.scalar.await('SELECT COUNT(*) FROM pt_mdt_warrants WHERE status = ?', {'active'}) or 0
-    local boloCount = MySQL.scalar.await('SELECT COUNT(*) FROM pt_mdt_bolos WHERE status = ?', {'active'}) or 0
-    local incidentCount = MySQL.scalar.await('SELECT COUNT(*) FROM pt_mdt_incidents WHERE created_at >= NOW() - INTERVAL 1 DAY') or 0
+    -- Statistiky s bezpečným obalením
+    local warrantCount = 0
+    pcall(function()
+        warrantCount = MySQL.scalar.await('SELECT COUNT(*) FROM pt_mdt_warrants WHERE status = ?', {'active'}) or 0
+    end)
+
+    local boloCount = 0
+    pcall(function()
+        boloCount = MySQL.scalar.await('SELECT COUNT(*) FROM pt_mdt_bolos WHERE status = ?', {'active'}) or 0
+    end)
+
+    local incidentCount = 0
+    pcall(function()
+        incidentCount = MySQL.scalar.await('SELECT COUNT(*) FROM pt_mdt_incidents WHERE created_at >= NOW() - INTERVAL 1 DAY') or 0
+    end)
 
     -- Bulletins (Nástěnka)
-    local bulletins = MySQL.query.await('SELECT * FROM pt_mdt_bulletins ORDER BY pinned DESC, created_at DESC LIMIT 10') or {}
+    local bulletins = {}
+    pcall(function()
+        bulletins = MySQL.query.await('SELECT * FROM pt_mdt_bulletins ORDER BY pinned DESC, created_at DESC LIMIT 10') or {}
+    end)
 
     -- Poslední incidenty pro dashboard
-    local recentIncidents = MySQL.query.await('SELECT id, title, creator_name, created_at FROM pt_mdt_incidents ORDER BY created_at DESC LIMIT ?', { Config.Limits.RecentIncidents }) or {}
+    local recentIncidents = {}
+    pcall(function()
+        recentIncidents = MySQL.query.await('SELECT id, title, creator_name, created_at FROM pt_mdt_incidents ORDER BY created_at DESC LIMIT ?', { Config.Limits.RecentIncidents }) or {}
+    end)
+
+    print(('[pt_mdt] Úspěšně odeslána data MDT pro důstojníka %s (ID %s)'):format(officerData.name, src))
 
     return {
         officer = officerData,
