@@ -20,17 +20,7 @@ CreateThread(function()
     end
 end)
 
--- Kontrola, zda hráč sedí v policejním autě
-function IsInPoliceVehicle()
-    local ped = PlayerPedId()
-    if not IsPedInAnyVehicle(ped, false) then return false end
-    local veh = GetVehiclePedIsIn(ped, false)
-    local class = GetVehicleClass(veh)
-    -- Třída 18 = Emergency vehicles (police, ambulance, fire)
-    return class == 18
-end
-
--- Kontrola oprávnění a podmínek otevření
+-- Kontrola oprávnění hráče
 function CanOpenMDT()
     local playerData = ESX.GetPlayerData()
     local currentJob = (playerData and playerData.job) or playerJob
@@ -48,31 +38,17 @@ function CanOpenMDT()
         return false, _U('not_authorized')
     end
 
-    if IsInPoliceVehicle() and Config.OpenOptions.AllowInPoliceVehicleWithoutItem then
-        return true
-    end
-
-    -- Kontrola ox_inventory itemu
-    if Config.OpenOptions.RequireItem then
-        local count = exports.ox_inventory:Search('count', Config.ItemName)
-        if not count or count <= 0 then
-            return false, _U('need_item_or_car')
-        end
-    end
-
     return true
 end
 
--- Otevření MDT
+-- Otevření MDT (výhradně přes item mdt_tablet)
 function OpenMDT(fromItem)
     if isMdtOpen then return end
 
-    if not fromItem then
-        local canOpen, reason = CanOpenMDT()
-        if not canOpen then
-            lib.notify({ type = 'error', description = reason })
-            return
-        end
+    local canOpen, reason = CanOpenMDT()
+    if not canOpen then
+        lib.notify({ type = 'error', description = reason })
+        return
     end
 
     lib.callback('pt_mdt:getInitialData', false, function(data)
@@ -84,7 +60,7 @@ function OpenMDT(fromItem)
         isMdtOpen = true
         SetNuiFocus(true, true)
 
-        -- Spustit animaci tabletu pokud hráč není řidičem jedoucího vozu
+        -- Spustit animaci tabletu pokud hráč nesedí ve vozidle
         local ped = PlayerPedId()
         local inVeh = IsPedInAnyVehicle(ped, false)
         if not inVeh then
@@ -107,13 +83,12 @@ function CloseMDT()
     SendNUIMessage({ action = 'close' })
 end
 
+-- Event ze serveru
 RegisterNetEvent('pt_mdt:openMDT', function(fromItem)
     OpenMDT(fromItem)
 end)
 
--- Registrace příkazu a klávesy
-RegisterCommand(Config.OpenOptions.Command, function()
-    OpenMDT(false)
-end, false)
-
-RegisterKeyMapping(Config.OpenOptions.Command, 'Otevřít policejní MDT', 'keyboard', Config.OpenOptions.Keybind)
+-- Export pro ox_inventory při kliknutí / použití itemu v inventáři
+exports('openTablet', function(data, slot)
+    OpenMDT(true)
+end)

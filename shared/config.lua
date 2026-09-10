@@ -12,12 +12,9 @@ Config.AllowedJobs = {
 -- Povolit přístup administrátorům pro testování a správu (i když nemají job police)
 Config.AllowAdminBypass = true
 
--- Otevírání MDT
+-- Otevírání MDT (pouze přes položku v inventáři)
 Config.OpenOptions = {
-    Command = 'mdt',                   -- Příkaz do chatu (/mdt)
-    Keybind = 'F5',                    -- Výchozí klávesa (lze přemapovat v GTA nastavení FiveM)
-    RequireItem = true,                -- Pokud je mimo policejní vozidlo, vyžaduje item v ox_inventory
-    AllowInPoliceVehicleWithoutItem = true, -- Umožňuje otevřít v policejním voze i bez itemu (palubní počítač)
+    ItemOnly = true                    -- Otevírání výhradně použitím položky v inventáři (i ve vozidle)
 }
 
 -- Název položky v ox_inventory
