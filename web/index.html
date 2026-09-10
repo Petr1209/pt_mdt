@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Police MDT - pt_mdt</title>
+    <link rel="stylesheet" href="css/leaflet.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -19,6 +20,7 @@
                 </div>
             </div>
             <div class="header-right">
+                <div class="header-clock" id="live-clock">12:00:00</div>
                 <div class="officer-badge">
                     <div class="status-indicator"></div>
                     <div class="officer-info" id="officer-name">Důstojník...</div>
@@ -118,6 +120,30 @@
                         </div>
                     </div>
 
+                    <!-- Quick Actions Toolbar -->
+                    <div class="quick-actions-bar">
+                        <button class="quick-action-btn" onclick="switchTab('citizens')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            <span data-i18n="citizens">Občané</span>
+                        </button>
+                        <button class="quick-action-btn" onclick="switchTab('vehicles')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                            <span data-i18n="vehicles">Vozidla</span>
+                        </button>
+                        <button class="quick-action-btn" onclick="switchTab('map')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                            <span data-i18n="live_map">Taktická mapa</span>
+                        </button>
+                        <button class="quick-action-btn" onclick="switchTab('dispatch')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            <span data-i18n="dispatch">Dispečink</span>
+                        </button>
+                        <button class="quick-action-btn" onclick="switchTab('incidents')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            <span data-i18n="incidents">Incidenty</span>
+                        </button>
+                    </div>
+
                     <div class="dashboard-grid">
                         <div class="panel-card">
                             <div class="panel-header">
@@ -136,22 +162,23 @@
                     </div>
                 </div>
 
-                <!-- Tab: Live Tactical Map -->
+                <!-- Tab: Live Tactical Map (Leaflet Full HD) -->
                 <div class="tab-view" id="tab-map">
                     <div class="tactical-map-grid">
                         <div class="map-viewport">
-                            <div class="map-grid-overlay"></div>
-                            <div class="map-radar-scan"></div>
-                            <div class="map-canvas-container" id="map-canvas">
-                                <!-- Dynamické jednotky -->
+                            <div id="leaflet-map" style="width: 100%; height: 100%;"></div>
+                            <div class="map-quick-controls">
+                                <button class="map-btn" id="map-btn-recenter" title="Los Santos">🏙️ Los Santos</button>
+                                <button class="map-btn" id="map-btn-county" title="Sandy Shores">🏜️ Sandy Shores</button>
+                                <button class="map-btn" id="map-btn-paleto" title="Paleto Bay">🌲 Paleto Bay</button>
                             </div>
                         </div>
-                        <div class="panel-card" style="height: 100%;">
+                        <div class="panel-card map-roster-panel" style="height: 100%;">
                             <div class="panel-header">
                                 <h2 data-i18n="patrol_units">Jednotky v terénu</h2>
                                 <button class="btn-secondary" id="btn-refresh-map" style="padding: 4px 10px; font-size: 12px;">🔄 Obnovit</button>
                             </div>
-                            <div class="item-list" id="map-units-roster" style="flex: 1; max-height: calc(88vh - 200px);">
+                            <div class="item-list" id="map-units-roster" style="flex: 1; max-height: calc(88vh - 200px); overflow-y: auto;">
                                 <!-- Seznam jednotek -->
                             </div>
                         </div>
@@ -467,40 +494,46 @@
 
     <!-- Floating Police In-Vehicle Speed Radar HUD -->
     <div id="police-radar-hud" class="radar-container">
+        <!-- Reposition Drag Bar for /radarset -->
+        <div class="radar-drag-handle" id="radar-drag-handle" style="display: none;">
+            <span data-i18n="radar_reposition">✥ PŘESUNOUT RADAR (Táhněte myší)</span>
+            <button id="btn-save-radar-pos" class="btn-primary" style="padding: 2px 10px; font-size: 11px; margin-left: 8px;" data-i18n="save_pos">Uložit pozici</button>
+        </div>
         <div class="radar-header">
-            <span class="radar-title">STALKER DUAL DSR RADAR</span>
+            <span class="radar-title" data-i18n="radar_title">STALKER DUAL DSR RADAR</span>
             <span class="radar-status" id="radar-power-led">RADAR ACTIVE</span>
         </div>
         <div class="radar-body">
             <!-- Front Antenna -->
             <div class="radar-antenna-section">
-                <div class="radar-label">FRONT TARGET</div>
+                <div class="radar-label" data-i18n="radar_front">FRONT TARGET</div>
                 <div class="radar-speed-display" id="radar-front-speed">000</div>
                 <div class="radar-plate-display" id="radar-front-plate">NO TARGET</div>
             </div>
             <!-- Patrol & Lock -->
             <div class="radar-center-section">
-                <div class="radar-label">PATROL SPEED</div>
+                <div class="radar-label" data-i18n="radar_patrol">PATROL SPEED</div>
                 <div class="radar-speed-display patrol" id="radar-patrol-speed">000</div>
                 <div class="radar-lock-box" id="radar-lock-box">
-                    <div class="radar-label">FAST LOCK</div>
+                    <div class="radar-label" data-i18n="radar_lock">FAST LOCK</div>
                     <div class="radar-lock-speed" id="radar-lock-speed">---</div>
                 </div>
             </div>
             <!-- Rear Antenna -->
             <div class="radar-antenna-section">
-                <div class="radar-label">REAR TARGET</div>
+                <div class="radar-label" data-i18n="radar_rear">REAR TARGET</div>
                 <div class="radar-speed-display" id="radar-rear-speed">000</div>
                 <div class="radar-plate-display" id="radar-rear-plate">NO TARGET</div>
             </div>
         </div>
         <div class="radar-footer">
             <span>[NUM8] LOCK TARGET</span>
-            <span>[NUM9] /radar ON/OFF</span>
+            <span>[NUM9] /radar | /radarset</span>
         </div>
     </div>
 
     <!-- Scripts -->
+    <script src="js/leaflet.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

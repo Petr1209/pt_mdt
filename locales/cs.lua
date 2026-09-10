@@ -75,5 +75,15 @@ Locales['cs'] = {
     unknown = 'Neznámé',
     live_map = 'Taktická mapa',
     patrol_units = 'Jednotky v terénu',
-    set_gps_unit = 'Zaměřit jednotku GPS'
+    set_gps_unit = 'Zaměřit jednotku GPS',
+    months = 'měsíců',
+    no_jail = 'Bez trestu',
+    radar_title = 'STALKER DUAL DSR RADAR',
+    radar_patrol = 'RYCHLOST HLÍDKY',
+    radar_front = 'PŘEDNÍ CÍL',
+    radar_rear = 'ZADNÍ CÍL',
+    radar_lock = 'UZAMČENO',
+    radar_no_target = 'ŽÁDNÝ CÍL',
+    radar_reposition = '✥ PŘESUNOUT RADAR (Táhněte myší)',
+    save_pos = 'Uložit pozici'
 }

@@ -75,5 +75,15 @@ Locales['en'] = {
     unknown = 'Unknown',
     live_map = 'Tactical Map',
     patrol_units = 'Units On Duty',
-    set_gps_unit = 'Set GPS to Unit'
+    set_gps_unit = 'Set GPS to Unit',
+    months = 'months',
+    no_jail = 'No Jail',
+    radar_title = 'STALKER DUAL DSR RADAR',
+    radar_patrol = 'PATROL SPEED',
+    radar_front = 'FRONT TARGET',
+    radar_rear = 'REAR TARGET',
+    radar_lock = 'FAST LOCK',
+    radar_no_target = 'NO TARGET',
+    radar_reposition = '✥ REPOSITION RADAR (Drag with mouse)',
+    save_pos = 'Save Position'
 }

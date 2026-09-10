@@ -143,3 +143,10 @@ RegisterNUICallback('getLiveUnits', function(_, cb)
         cb(units or {})
     end)
 end)
+
+-- Uložení / ukončení přesunu radaru
+RegisterNUICallback('saveRadarPosition', function(data, cb)
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
+

@@ -242,6 +242,35 @@ lib.callback.register('pt_mdt:getInitialData', function(src)
         recentIncidents = MySQL.query.await('SELECT id, title, creator_name, created_at FROM pt_mdt_incidents ORDER BY created_at DESC LIMIT ?', { Config.Limits.RecentIncidents }) or {}
     end)
 
+    local function GetLocalizedPenalCode()
+        local locale = Config.Locale or 'cs'
+        local result = {}
+        for _, cat in ipairs(PenalCode) do
+            local catName = cat.category
+            if type(catName) == 'table' then
+                catName = catName[locale] or catName['en'] or catName['cs'] or ''
+            end
+            local items = {}
+            for _, it in ipairs(cat.items) do
+                local itemTitle = it.title
+                if type(itemTitle) == 'table' then
+                    itemTitle = itemTitle[locale] or itemTitle['en'] or itemTitle['cs'] or ''
+                end
+                table.insert(items, {
+                    id = it.id,
+                    title = itemTitle,
+                    fine = it.fine,
+                    prison = it.prison
+                })
+            end
+            table.insert(result, {
+                category = catName,
+                items = items
+            })
+        end
+        return result
+    end
+
     print(('[pt_mdt] Úspěšně odeslána data MDT pro důstojníka %s (ID %s)'):format(officerData.name, src))
 
     return {
@@ -252,7 +281,7 @@ lib.callback.register('pt_mdt:getInitialData', function(src)
         incidentCount = incidentCount,
         bulletins = bulletins,
         recentIncidents = recentIncidents,
-        penalCode = PenalCode,
+        penalCode = GetLocalizedPenalCode(),
         locales = GetCurrentLocaleTable()
     }
 end)

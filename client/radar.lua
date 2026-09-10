@@ -146,8 +146,46 @@ function ToggleLockRadar()
     })
 end
 
+local radarEditMode = false
+
+function ToggleRadarSet()
+    local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) then
+        lib.notify({ type = 'error', description = 'Musíte sedět v policejním voze!' })
+        return
+    end
+    local veh = GetVehiclePedIsIn(ped, false)
+    if not IsPoliceVehicle(veh) then
+        lib.notify({ type = 'error', description = 'Radar funguje pouze v policejním voze!' })
+        return
+    end
+
+    if not radarActive then
+        radarActive = true
+        SendNUIMessage({ action = 'toggleRadar', show = true })
+    end
+
+    radarEditMode = not radarEditMode
+    SetNuiFocus(radarEditMode, radarEditMode)
+    SendNUIMessage({
+        action = 'setRadarEditMode',
+        editing = radarEditMode
+    })
+
+    if radarEditMode then
+        lib.notify({
+            type = 'inform',
+            title = 'Pozice radaru',
+            description = 'Uchopte radar myší a přesuňte jej kamkoliv na obrazovce. Pro uložení klikněte na Uložit nebo napište /radarset.'
+        })
+    else
+        lib.notify({ type = 'success', description = 'Pozice radaru byla uložena.' })
+    end
+end
+
 RegisterCommand('radar', ToggleRadar, false)
 RegisterCommand('radarlock', ToggleLockRadar, false)
+RegisterCommand('radarset', ToggleRadarSet, false)
 
 RegisterKeyMapping('radar', 'Zapnout/Vypnout policejní radar', 'keyboard', 'NUMPAD9')
 RegisterKeyMapping('radarlock', 'Uzamknout rychlost radaru (Lock)', 'keyboard', 'NUMPAD8')

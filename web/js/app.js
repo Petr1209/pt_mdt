@@ -137,11 +137,19 @@ window.addEventListener('message', (event) => {
         updateRadarDisplay(item.data);
     } else if (item.action === 'lockRadar') {
         applyRadarLock(item.locked, item.lockedData);
+    } else if (item.action === 'setRadarEditMode') {
+        setRadarEditMode(item.editing);
     }
 });
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        const radar = document.getElementById('police-radar-hud');
+        if (radar && radar.classList.contains('editing')) {
+            setRadarEditMode(false);
+            postNUI('saveRadarPosition');
+            return;
+        }
         closeMDT();
     }
 });
@@ -711,7 +719,7 @@ function renderPenalCode() {
                     </div>
                     <div style="display: flex; gap: 14px; align-items: center;">
                         <span style="color: var(--accent-green); font-weight: 700; font-size: 14px;">$${i.fine.toLocaleString()}</span>
-                        <span class="tag-badge ${i.prison > 0 ? 'red' : 'blue'}">${i.prison > 0 ? `${i.prison} měsíců` : 'Bez trestu'}</span>
+                        <span class="tag-badge ${i.prison > 0 ? 'red' : 'blue'}">${i.prison > 0 ? `${i.prison} ${t('months', 'měsíců')}` : t('no_jail', 'Bez trestu')}</span>
                     </div>
                 </div>
             `;
@@ -765,14 +773,93 @@ async function loadDispatch() {
 }
 
 // ==========================================
-// 9. TACTICAL LIVE GPS MAP
+// 9. TACTICAL LIVE GPS MAP (LEAFLET HD)
 // ==========================================
+let leafletMap = null;
+let leafletMarkers = new Map();
+let mapInitialized = false;
 let mapPollingInterval = null;
+let currentMapFilter = 'all';
+
+const CALIB_SX = 0.995209;
+const CALIB_SY = 1.003941;
+const CALIB_OX = 2.47;
+const CALIB_OY = 7.61;
+
+function toMapLatLng(coords) {
+    const x = coords.x || 0;
+    const y = coords.y || 0;
+    return [CALIB_SY * y + CALIB_OY, CALIB_SX * x + CALIB_OX];
+}
+
+function getCustomCRS() {
+    const zoomNumb = 0.6931471805599453;
+    return L.extend({}, L.CRS.Simple, {
+        projection: L.Projection.LonLat,
+        scale: (zoom) => Math.pow(2, zoom),
+        zoom: (sc) => Math.log(sc) / zoomNumb,
+        distance: (pos1, pos2) => {
+            const dx = pos2.lng - pos1.lng;
+            const dy = pos2.lat - pos1.lat;
+            return Math.sqrt(dx * dx + dy * dy);
+        },
+        transformation: new L.Transformation(0.02072, 117.3, -0.0205, 172.8),
+        infinite: false,
+    });
+}
+
+function initLeafletMap() {
+    if (mapInitialized && leafletMap) {
+        setTimeout(() => leafletMap.invalidateSize(), 80);
+        return;
+    }
+    const container = document.getElementById('leaflet-map');
+    if (!container) return;
+
+    mapInitialized = true;
+    leafletMap = L.map(container, {
+        crs: getCustomCRS(),
+        minZoom: 1.5,
+        maxZoom: 6,
+        zoom: 2.7,
+        center: [-1500, 200],
+        zoomControl: true,
+        attributionControl: false
+    });
+
+    const sw = leafletMap.unproject([0, 1024], 2);
+    const ne = leafletMap.unproject([1024, 0], 2);
+    const bounds = new L.LatLngBounds(sw, ne);
+
+    L.imageOverlay('img/gtav_map.jpg', bounds).addTo(leafletMap);
+
+    // Rychlá navigační tlačítka
+    document.getElementById('map-btn-recenter')?.addEventListener('click', () => {
+        leafletMap.flyTo([-1200, 100], 3.6);
+    });
+    document.getElementById('map-btn-county')?.addEventListener('click', () => {
+        leafletMap.flyTo([2200, 1600], 3.3);
+    });
+    document.getElementById('map-btn-paleto')?.addEventListener('click', () => {
+        leafletMap.flyTo([6500, -100], 3.6);
+    });
+
+    // Filtry v pravém panelu
+    document.querySelectorAll('.filter-tag').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-tag').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMapFilter = btn.getAttribute('data-filter');
+            loadTacticalMap();
+        });
+    });
+}
 
 function startTacticalMapPolling() {
+    initLeafletMap();
     loadTacticalMap();
     if (!mapPollingInterval) {
-        mapPollingInterval = setInterval(loadTacticalMap, 3000);
+        mapPollingInterval = setInterval(loadTacticalMap, 2500);
     }
 }
 
@@ -784,69 +871,79 @@ function stopTacticalMapPolling() {
 }
 
 async function loadTacticalMap() {
+    if (!leafletMap) initLeafletMap();
     const units = await postNUI('getLiveUnits');
     renderTacticalUnits(units || []);
 }
 
-// GTA V World Coordinates to Map Container Percentage
-function worldToMapPercent(x, y) {
-    const minX = -4000;
-    const maxX = 4500;
-    const minY = -4000;
-    const maxY = 8000;
-
-    const clampedX = Math.max(minX, Math.min(maxX, x));
-    const clampedY = Math.max(minY, Math.min(maxY, y));
-
-    const leftPercent = ((clampedX - minX) / (maxX - minX)) * 100;
-    const topPercent = ((maxY - clampedY) / (maxY - minY)) * 100;
-
-    return {
-        left: Math.max(2, Math.min(98, leftPercent)),
-        top: Math.max(2, Math.min(98, topPercent))
-    };
-}
-
 function renderTacticalUnits(units) {
-    const canvas = document.getElementById('map-canvas');
+    if (!leafletMap) return;
     const roster = document.getElementById('map-units-roster');
-    if (!canvas || !roster) return;
+    if (!roster) return;
 
-    canvas.innerHTML = '';
+    const seenIds = new Set();
     roster.innerHTML = '';
 
-    if (!units || units.length === 0) {
-        roster.innerHTML = `<div style="color: var(--text-muted); padding: 16px; text-align: center;">Žádné aktivní hlídky v terénu.</div>`;
-        return;
+    const filteredUnits = units.filter(unit => {
+        if (currentMapFilter === 'police') return unit.job !== 'ambulance';
+        if (currentMapFilter === 'ambulance') return unit.job === 'ambulance';
+        return true;
+    });
+
+    if (filteredUnits.length === 0) {
+        roster.innerHTML = `<div style="color: var(--text-muted); padding: 16px; text-align: center;">${t('no_results', 'Žádné jednotky v terénu.')}</div>`;
     }
 
-    units.forEach(unit => {
+    filteredUnits.forEach(unit => {
+        const id = String(unit.id);
+        seenIds.add(id);
+
         const coords = unit.coords || { x: 0, y: 0 };
-        const pos = worldToMapPercent(coords.x, coords.y);
+        const latlng = toMapLatLng(coords);
         const isEMS = unit.job === 'ambulance';
-
-        // 1. Značka na mapě
-        const marker = document.createElement('div');
-        marker.className = 'unit-marker';
-        marker.style.left = `${pos.left}%`;
-        marker.style.top = `${pos.top}%`;
-        marker.title = `${unit.name} (${unit.jobLabel} - ${unit.grade})`;
-
-        const dotClass = isEMS ? 'unit-icon-dot ems' : 'unit-icon-dot';
         const vehIcon = unit.inVehicle ? '🚔' : '👮';
+        const dotClass = isEMS ? 'marker-beacon ems' : 'marker-beacon';
 
-        marker.innerHTML = `
-            <div class="${dotClass}" style="transform: rotate(${unit.heading || 0}deg);">
-                <div style="width: 4px; height: 4px; background: white; border-radius: 50%;"></div>
+        // 1. Leaflet Custom Pulsing Marker
+        const iconHtml = `
+            <div class="custom-leaflet-marker">
+                <div class="${dotClass}" style="transform: rotate(${unit.heading || 0}deg);">
+                    <span>${isEMS ? '🚑' : vehIcon}</span>
+                </div>
+                <div class="marker-label">${escapeHtml(unit.name)}</div>
             </div>
-            <div class="unit-label-tag">${vehIcon} ${escapeHtml(unit.name)}</div>
         `;
 
-        marker.addEventListener('click', () => {
-            postNUI('setWaypoint', { x: coords.x, y: coords.y });
+        const icon = L.divIcon({
+            className: 'leaflet-unit-div-icon',
+            html: iconHtml,
+            iconSize: [80, 50],
+            iconAnchor: [40, 25]
         });
 
-        canvas.appendChild(marker);
+        let marker = leafletMarkers.get(id);
+        if (marker) {
+            marker.setLatLng(latlng);
+            marker.setIcon(icon);
+        } else {
+            marker = L.marker(latlng, { icon: icon }).addTo(leafletMap);
+            marker.bindPopup(`
+                <div style="font-size: 12px; min-width: 170px; line-height: 1.5;">
+                    <div style="font-weight: 700; color: #38bdf8; font-size: 14px;">${escapeHtml(unit.name)}</div>
+                    <div style="color: #94a3b8; font-size: 11px;">${escapeHtml(unit.jobLabel)} - ${escapeHtml(unit.grade)}</div>
+                    <div style="color: #cbd5e1; margin-top: 4px;">Stav: ${unit.inVehicle ? '🚔 Ve vozidle' : '🚶 Pěší hlídka'}</div>
+                    <button id="btn-popup-gps-${id}" class="btn-primary" style="margin-top: 8px; width: 100%; font-size: 11px; padding: 4px 8px;">
+                        🎯 ${t('set_waypoint', 'Zaměřit GPS')}
+                    </button>
+                </div>
+            `);
+            marker.on('popupopen', () => {
+                document.getElementById(`btn-popup-gps-${id}`)?.addEventListener('click', () => {
+                    postNUI('setWaypoint', { x: coords.x, y: coords.y });
+                });
+            });
+            leafletMarkers.set(id, marker);
+        }
 
         // 2. Karta v postranním seznamu jednotek
         const card = document.createElement('div');
@@ -857,26 +954,44 @@ function renderTacticalUnits(units) {
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <div class="${dotClass}" style="width: 10px; height: 10px;"></div>
+                    <div class="${dotClass}" style="width: 12px; height: 12px; border-width: 1px;"></div>
                     <strong style="color: var(--text-primary); font-size: 13px;">${escapeHtml(unit.name)}</strong>
                 </div>
                 <span class="tag-badge ${isEMS ? 'red' : 'blue'}" style="font-size: 10px;">${escapeHtml(unit.jobLabel)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary);">
-                <span>Hodnost: <strong style="color: var(--text-primary);">${escapeHtml(unit.grade)}</strong></span>
-                <span>Status: ${unit.inVehicle ? '🚔 Ve voze' : '🚶 Pěší'}</span>
+                <span>${t('rank', 'Hodnost')}: <strong style="color: var(--text-primary);">${escapeHtml(unit.grade)}</strong></span>
+                <span>${unit.inVehicle ? '🚔 Ve voze' : '🚶 Pěší'}</span>
             </div>
-            <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; align-self: flex-end; margin-top: 4px;">
-                🎯 ${t('set_waypoint', 'Zaměřit GPS')}
-            </button>
+            <div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px;">
+                <button class="btn-secondary btn-card-focus" style="font-size: 11px; padding: 4px 8px;">
+                    🔍 Pohled
+                </button>
+                <button class="btn-primary btn-card-gps" style="font-size: 11px; padding: 4px 8px;">
+                    🎯 ${t('set_waypoint', 'GPS')}
+                </button>
+            </div>
         `;
 
-        card.querySelector('button').addEventListener('click', () => {
+        card.querySelector('.btn-card-focus').addEventListener('click', () => {
+            leafletMap.flyTo(latlng, 4.5);
+            marker.openPopup();
+        });
+
+        card.querySelector('.btn-card-gps').addEventListener('click', () => {
             postNUI('setWaypoint', { x: coords.x, y: coords.y });
         });
 
         roster.appendChild(card);
     });
+
+    // Odstranit offline jednotky
+    for (const [id, marker] of leafletMarkers.entries()) {
+        if (!seenIds.has(id)) {
+            marker.remove();
+            leafletMarkers.delete(id);
+        }
+    }
 }
 
 const btnRefreshMap = document.getElementById('btn-refresh-map');
@@ -885,8 +1000,94 @@ if (btnRefreshMap) {
 }
 
 // ==========================================
-// 10. POLICE IN-VEHICLE SPEED RADAR
+// 10. POLICE IN-VEHICLE SPEED RADAR & /radarset
 // ==========================================
+let radarIsDragging = false;
+let radarDragOffset = { x: 0, y: 0 };
+
+function initRadarDraggable() {
+    const radar = document.getElementById('police-radar-hud');
+    const saveBtn = document.getElementById('btn-save-radar-pos');
+    if (!radar) return;
+
+    // Načtení uložené pozice z localStorage
+    const savedPos = localStorage.getItem('pt_mdt_radar_pos');
+    if (savedPos) {
+        try {
+            const pos = JSON.parse(savedPos);
+            if (pos && pos.left !== undefined && pos.top !== undefined) {
+                radar.style.left = pos.left;
+                radar.style.top = pos.top;
+                radar.style.bottom = 'auto';
+                radar.style.right = 'auto';
+            }
+        } catch (e) {}
+    }
+
+    // Dragging myší při edit módu
+    const startDrag = (e) => {
+        if (!radar.classList.contains('editing')) return;
+        radarIsDragging = true;
+        const rect = radar.getBoundingClientRect();
+        radarDragOffset.x = e.clientX - rect.left;
+        radarDragOffset.y = e.clientY - rect.top;
+        e.preventDefault();
+    };
+
+    radar.addEventListener('mousedown', startDrag);
+
+    window.addEventListener('mousemove', (e) => {
+        if (!radarIsDragging) return;
+        const x = Math.max(10, Math.min(window.innerWidth - radar.offsetWidth - 10, e.clientX - radarDragOffset.x));
+        const y = Math.max(10, Math.min(window.innerHeight - radar.offsetHeight - 10, e.clientY - radarDragOffset.y));
+
+        radar.style.left = `${x}px`;
+        radar.style.top = `${y}px`;
+        radar.style.bottom = 'auto';
+        radar.style.right = 'auto';
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (radarIsDragging) {
+            radarIsDragging = false;
+            saveCurrentRadarPos();
+        }
+    });
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            saveCurrentRadarPos();
+            setRadarEditMode(false);
+            postNUI('saveRadarPosition');
+        });
+    }
+}
+
+function saveCurrentRadarPos() {
+    const radar = document.getElementById('police-radar-hud');
+    if (!radar) return;
+    const pos = {
+        left: radar.style.left,
+        top: radar.style.top
+    };
+    localStorage.setItem('pt_mdt_radar_pos', JSON.stringify(pos));
+}
+
+function setRadarEditMode(editing) {
+    const radar = document.getElementById('police-radar-hud');
+    const dragHandle = document.getElementById('radar-drag-handle');
+    if (!radar) return;
+
+    if (editing) {
+        radar.classList.add('active');
+        radar.classList.add('editing');
+        if (dragHandle) dragHandle.style.display = 'flex';
+    } else {
+        radar.classList.remove('editing');
+        if (dragHandle) dragHandle.style.display = 'none';
+    }
+}
+
 function updateRadarDisplay(data) {
     if (!data) return;
     const patrolEl = document.getElementById('radar-patrol-speed');
@@ -898,9 +1099,9 @@ function updateRadarDisplay(data) {
 
     if (patrolEl) patrolEl.textContent = String(data.patrolSpeed || 0).padStart(3, '0');
     if (frontSpeedEl) frontSpeedEl.textContent = String(data.frontSpeed || 0).padStart(3, '0');
-    if (frontPlateEl) frontPlateEl.textContent = data.frontPlate && data.frontPlate !== '---' ? data.frontPlate : 'NO TARGET';
+    if (frontPlateEl) frontPlateEl.textContent = data.frontPlate && data.frontPlate !== '---' ? data.frontPlate : t('radar_no_target', 'NO TARGET');
     if (rearSpeedEl) rearSpeedEl.textContent = String(data.rearSpeed || 0).padStart(3, '0');
-    if (rearPlateEl) rearPlateEl.textContent = data.rearPlate && data.rearPlate !== '---' ? data.rearPlate : 'NO TARGET';
+    if (rearPlateEl) rearPlateEl.textContent = data.rearPlate && data.rearPlate !== '---' ? data.rearPlate : t('radar_no_target', 'NO TARGET');
 
     if (data.locked && data.lockedData && lockSpeedEl) {
         lockSpeedEl.textContent = String(data.lockedData.speed || 0).padStart(3, '0');
@@ -919,6 +1120,18 @@ function applyRadarLock(locked, lockedData) {
         lockBox.classList.remove('locked');
         lockSpeedEl.textContent = '---';
     }
+}
+
+// Live Digital Clock
+function startLiveClock() {
+    const clock = document.getElementById('live-clock');
+    if (!clock) return;
+    const update = () => {
+        const now = new Date();
+        clock.textContent = now.toTimeString().split(' ')[0];
+    };
+    update();
+    setInterval(update, 1000);
 }
 
 // Nástěnka - přidání
@@ -965,3 +1178,7 @@ function escapeHtml(text) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
+// Inicializace při načtení NUI
+initRadarDraggable();
+startLiveClock();
