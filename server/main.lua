@@ -136,6 +136,29 @@ ESX.RegisterUsableItem(Config.ItemName, function(source)
     TriggerClientEvent('pt_mdt:openMDT', source, true)
 end)
 
+-- Serverový export pro ox_inventory
+exports('openTablet', function(event, item, inventory, slot, data)
+    local src = source
+    if not src or src == 0 then
+        if type(inventory) == 'table' and inventory.id then
+            src = inventory.id
+        elseif type(event) == 'table' and event.source then
+            src = event.source
+        end
+    end
+    if src then
+        local allowed, xPlayer = IsPlayerAllowed(src)
+        if not allowed then
+            TriggerClientEvent('ox_lib:notify', src, {
+                type = 'error',
+                description = _U('not_authorized')
+            })
+            return false
+        end
+        TriggerClientEvent('pt_mdt:openMDT', src, true)
+    end
+end)
+
 -- Registrace použitelné položky v ox_inventory
 CreateThread(function()
     Wait(500)

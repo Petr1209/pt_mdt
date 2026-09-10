@@ -47,3 +47,7 @@ dependencies {
     'oxmysql',
     'ox_lib'
 }
+
+export 'openTablet'
+server_export 'openTablet'
+server_export 'SendDispatch'
