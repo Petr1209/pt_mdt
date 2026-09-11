@@ -1,4 +1,5 @@
 local radarActive = false
+local radarShowing = false
 local radarLocked = false
 local lockedData = nil
 
@@ -36,55 +37,76 @@ local function ScanRearVehicle(patrolVeh)
     return GetVehicleInDirection(offsetFrom, offsetTo)
 end
 
--- Vlákno pro měření rychlosti radarem
+-- Vlákno pro měření rychlosti radarem s automatickým skrytím při vystoupení
 CreateThread(function()
     while true do
         local sleep = 500
         local ped = PlayerPedId()
 
-        if radarActive and IsPedInAnyVehicle(ped, false) then
-            local veh = GetVehiclePedIsIn(ped, false)
-            if IsPoliceVehicle(veh) and GetPedInVehicleSeat(veh, -1) == ped then
-                sleep = 60 -- Plynulá aktualizace radaru
+        if radarActive then
+            if IsPedInAnyVehicle(ped, false) then
+                local veh = GetVehiclePedIsIn(ped, false)
+                if IsPoliceVehicle(veh) and GetPedInVehicleSeat(veh, -1) == ped then
+                    sleep = 60 -- Plynulá aktualizace radaru
 
-                local patrolSpeed = math.floor(GetEntitySpeed(veh) * 3.6)
+                    if not radarShowing then
+                        radarShowing = true
+                        SendNUIMessage({ action = 'toggleRadar', show = true })
+                    end
 
-                local frontVeh = ScanFrontVehicle(veh)
-                local frontSpeed = 0
-                local frontPlate = '---'
-                local frontModel = ''
+                    local patrolSpeed = math.floor(GetEntitySpeed(veh) * 3.6)
 
-                if frontVeh and DoesEntityExist(frontVeh) then
-                    frontSpeed = math.floor(GetEntitySpeed(frontVeh) * 3.6)
-                    frontPlate = GetVehicleNumberPlateText(frontVeh) or '---'
-                    local modelHash = GetEntityModel(frontVeh)
-                    frontModel = GetLabelText(GetDisplayNameFromVehicleModel(modelHash))
+                    local frontVeh = ScanFrontVehicle(veh)
+                    local frontSpeed = 0
+                    local frontPlate = '---'
+                    local frontModel = ''
+
+                    if frontVeh and DoesEntityExist(frontVeh) then
+                        frontSpeed = math.floor(GetEntitySpeed(frontVeh) * 3.6)
+                        frontPlate = GetVehicleNumberPlateText(frontVeh) or '---'
+                        local modelHash = GetEntityModel(frontVeh)
+                        frontModel = GetLabelText(GetDisplayNameFromVehicleModel(modelHash))
+                    end
+
+                    local rearVeh = ScanRearVehicle(veh)
+                    local rearSpeed = 0
+                    local rearPlate = '---'
+
+                    if rearVeh and DoesEntityExist(rearVeh) then
+                        rearSpeed = math.floor(GetEntitySpeed(rearVeh) * 3.6)
+                        rearPlate = GetVehicleNumberPlateText(rearVeh) or '---'
+                    end
+
+                    SendNUIMessage({
+                        action = 'updateRadar',
+                        data = {
+                            patrolSpeed = patrolSpeed,
+                            frontSpeed = frontSpeed,
+                            frontPlate = frontPlate,
+                            frontModel = frontModel,
+                            rearSpeed = rearSpeed,
+                            rearPlate = rearPlate,
+                            locked = radarLocked,
+                            lockedData = lockedData
+                        }
+                    })
+                else
+                    -- V jiném než policejním voze nebo na sedadle spolujezdce
+                    if radarShowing then
+                        radarShowing = false
+                        SendNUIMessage({ action = 'toggleRadar', show = false })
+                    end
                 end
-
-                local rearVeh = ScanRearVehicle(veh)
-                local rearSpeed = 0
-                local rearPlate = '---'
-
-                if rearVeh and DoesEntityExist(rearVeh) then
-                    rearSpeed = math.floor(GetEntitySpeed(rearVeh) * 3.6)
-                    rearPlate = GetVehicleNumberPlateText(rearVeh) or '---'
-                end
-
-                SendNUIMessage({
-                    action = 'updateRadar',
-                    data = {
-                        patrolSpeed = patrolSpeed,
-                        frontSpeed = frontSpeed,
-                        frontPlate = frontPlate,
-                        frontModel = frontModel,
-                        rearSpeed = rearSpeed,
-                        rearPlate = rearPlate,
-                        locked = radarLocked,
-                        lockedData = lockedData
-                    }
-                })
             else
-                radarActive = false
+                -- Policista vystoupil z vozu -> radar se ihned skryje (dočasně vypne)
+                if radarShowing then
+                    radarShowing = false
+                    SendNUIMessage({ action = 'toggleRadar', show = false })
+                end
+            end
+        else
+            if radarShowing then
+                radarShowing = false
                 SendNUIMessage({ action = 'toggleRadar', show = false })
             end
         end
@@ -96,7 +118,10 @@ end)
 -- Přepnutí radaru (zapnout/vypnout)
 function ToggleRadar()
     local ped = PlayerPedId()
-    if not IsPedInAnyVehicle(ped, false) then return end
+    if not IsPedInAnyVehicle(ped, false) then
+        lib.notify({ type = 'error', description = _U('need_item_or_car') })
+        return
+    end
     local veh = GetVehiclePedIsIn(ped, false)
     if not IsPoliceVehicle(veh) then
         lib.notify({ type = 'error', description = 'Radar funguje pouze v policejním voze!' })
@@ -104,15 +129,20 @@ function ToggleRadar()
     end
 
     radarActive = not radarActive
-    SendNUIMessage({
-        action = 'toggleRadar',
-        show = radarActive
-    })
-
-    if radarActive then
-        lib.notify({ type = 'inform', description = 'Policejní radar byl aktivován.' })
-    else
+    if not radarActive then
+        radarShowing = false
+        SendNUIMessage({
+            action = 'toggleRadar',
+            show = false
+        })
         lib.notify({ type = 'inform', description = 'Policejní radar byl vypnut.' })
+    else
+        radarShowing = true
+        SendNUIMessage({
+            action = 'toggleRadar',
+            show = true
+        })
+        lib.notify({ type = 'inform', description = 'Policejní radar byl aktivován.' })
     end
 end
 
@@ -186,6 +216,14 @@ end
 RegisterCommand('radar', ToggleRadar, false)
 RegisterCommand('radarlock', ToggleLockRadar, false)
 RegisterCommand('radarset', ToggleRadarSet, false)
+RegisterCommand('radarreset', function()
+    SendNUIMessage({ action = 'resetRadarPosition' })
+    lib.notify({
+        type = 'inform',
+        title = 'Radar',
+        description = 'Pozice radaru byla vrácena do výchozího stavu.'
+    })
+end, false)
 
 RegisterKeyMapping('radar', 'Zapnout/Vypnout policejní radar', 'keyboard', 'NUMPAD9')
 RegisterKeyMapping('radarlock', 'Uzamknout rychlost radaru (Lock)', 'keyboard', 'NUMPAD8')

@@ -116,3 +116,25 @@ lib.callback.register('pt_mdt:saveCitizenProfile', function(src, data)
 
     return true
 end)
+
+-- Přidání licence občanovi
+lib.callback.register('pt_mdt:addLicense', function(src, data)
+    local allowed = IsPlayerAllowed(src)
+    if not allowed or not data.identifier or not data.license then return false end
+
+    local exists = MySQL.scalar.await('SELECT 1 FROM user_licenses WHERE owner = ? AND type = ?', { data.identifier, data.license })
+    if exists then return false end
+
+    local affected = MySQL.update.await('INSERT INTO user_licenses (type, owner) VALUES (?, ?)', { data.license, data.identifier })
+    return affected > 0
+end)
+
+-- Odebrání licence občanovi
+lib.callback.register('pt_mdt:removeLicense', function(src, data)
+    local allowed = IsPlayerAllowed(src)
+    if not allowed or not data.identifier or not data.license then return false end
+
+    local affected = MySQL.update.await('DELETE FROM user_licenses WHERE owner = ? AND type = ?', { data.identifier, data.license })
+    return affected > 0
+end)
+

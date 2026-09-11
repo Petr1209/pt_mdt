@@ -92,3 +92,16 @@ end)
 exports('openTablet', function(data, slot)
     OpenMDT(true)
 end)
+
+-- Synchronizace času startu serveru při připojení hráče
+CreateThread(function()
+    Wait(1500)
+    TriggerServerEvent('pt_mdt:requestBootTime')
+end)
+
+RegisterNetEvent('pt_mdt:syncBootTime', function(bootTime)
+    SendNUIMessage({
+        action = 'initSession',
+        bootTime = bootTime
+    })
+end)

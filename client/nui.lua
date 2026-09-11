@@ -23,6 +23,18 @@ RegisterNUICallback('saveCitizenProfile', function(data, cb)
     end, data)
 end)
 
+RegisterNUICallback('addLicense', function(data, cb)
+    lib.callback('pt_mdt:addLicense', false, function(success)
+        cb(success)
+    end, data)
+end)
+
+RegisterNUICallback('removeLicense', function(data, cb)
+    lib.callback('pt_mdt:removeLicense', false, function(success)
+        cb(success)
+    end, data)
+end)
+
 -- Vozidla
 RegisterNUICallback('searchVehicles', function(data, cb)
     lib.callback('pt_mdt:searchVehicles', false, function(results)

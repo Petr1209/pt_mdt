@@ -1,59 +1,81 @@
+# 🚨 PT_MDT - Advanced Police Mobile Data Terminal & Dual Radar
+
 <div align="center">
-  <h1>🚨 PT_MDT - Police Mobile Data Terminal</h1>
-  <p><strong>Moderní, rychlý a plně vybavený policejní terminál pro FiveM (ESX Legacy & ox_inventory)</strong></p>
+  <img src="mdt_tablet.png" alt="PT_MDT Tablet" width="160"/>
+  <h3>Modern, Fast & Standalone-Ready Police CAD / MDT for FiveM (ESX Legacy & ox_inventory)</h3>
 
   [![FiveM](https://img.shields.io/badge/FiveM-Ready-blue.svg?style=for-the-badge&logo=fivem)](https://fivem.net/)
   [![ESX Legacy](https://img.shields.io/badge/ESX-Legacy-darkgreen.svg?style=for-the-badge)](https://esx-framework.org/)
   [![ox_inventory](https://img.shields.io/badge/ox__inventory-Integrated-purple.svg?style=for-the-badge)](https://github.com/overextended/ox_inventory)
+  [![ox_lib](https://img.shields.io/badge/ox__lib-Required-red.svg?style=for-the-badge)](https://github.com/overextended/ox_lib)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 </div>
 
 ---
 
-## 📖 Přehled / Overview
-
-**pt_mdt** je pokročilý policejní systém (MDT / CAD) navržený s důrazem na čistý moderní design, rychlost a snadnou konfiguraci. Nevyžaduje žádné složité kompilování NodeJS balíčků – po stažení z GitHubu funguje okamžitě!
+## 🌐 Languages / Jazyky
+- 🇨🇿 **Čeština (`cs`)**
+- 🇬🇧 **English (`en`)**
+- 🇩🇪 **Deutsch (`de`)**
 
 ---
 
-## ✨ Klíčové funkce / Features
+## ✨ Features (English)
 
-- 🖥️ **Přehledný Dashboard**:
-  - Hlídky ve službě (aktivní policisté a šerifové).
-  - Oddělení nástěnky s hlášeními velení (možnost připnout zprávy).
-  - Rychlé statistiky aktivních zatykačů, BOLO a incidentů za posledních 24 hodin.
-- 👤 **Evidence občanů (Citizens)**:
-  - Vyhledávání osob dle jména, příjmení, telefonního čísla nebo rodného čísla / ID.
-  - Vlastněné licence (řidičský průkaz, zbrojní průkaz z `user_licenses`).
-  - Kompletní trestní rejstřík a záznamy o trestech.
-  - Záznamy o vlastněných vozidlech a aktivních zatykačích na osobu.
-  - Možnost nahrání policejní fotografie (Mugshot) a interních poznámek.
-- 🚔 **Evidence vozidel (Vehicles)**:
-  - Vyhledávání podle SPZ (Plate).
-  - Přímé zjištění majitele vozidla s možností jedním klikem otevřít jeho kartu.
-  - Označení vozidla jako **Odcizené** (Stolen) a interní policejní záznamy k vozidlu.
-- 📋 **Incidenty a spisy (Incidents & Reports)**:
-  - Tvorba protokolů s přiřazením zasahujících důstojníků, podezřelých a svědků.
-  - Interaktivní výběr trestů z **Trestního sazebníku (Penal Code)**.
-  - Automatický součet celkové pokuty a délky vězení.
-  - **Plná automatizace**: vystavení pokuty přímo na účet podezřelého (`esx_billing` / society) a odeslání do vězení.
-- 📜 **Zatykače (Warrants)**:
-  - Vydávání zatykačů na hledané osoby.
-  - Upozornění do chatu/notifikace všem hlídkám ve službě.
-  - Možnost zatykač uzavřít po zadržení pachatele.
-- 🚨 **BOLO Pátrání (Be On the Lookout)**:
-  - Vyhlášení urgentního pátrání po nebezpečných osobách nebo vozidlech.
-- ⚖️ **Trestní sazebník (Penal Code)**:
-  - Plně kategorizovaný sazebník (Dopravní přestupky, Veřejný pořádek, Majetek, Násilí, Drogy a zbraně) přehledně editovatelný v `shared/penal_code.lua`.
-- 📻 **Dispečink a 911 hovory (Dispatch)**:
-  - Záznam příchozích tísňových volání.
-  - Možnost jedním kliknutím nastavit GPS cíl (waypoint) na mapě.
-- 🌐 **Vícejazyčnost (Multi-language / i18n)**:
-  - Předpřipravené jazyky: **Čeština (`cs`)**, **Angličtina (`en`)**, **Němčina (`de`)**.
-  - Výběr jediným nastavením v `shared/config.lua`.
-- 🎒 **Integrace s `ox_inventory`**:
-  - Unikátní item `mdt_tablet` s 3D propem a animací držení v ruce.
-  - Možnost otevření MDT odkudkoliv s itemem, nebo v policejním voze přes klávesu/příkaz (`/mdt`).
+- 📱 **Hardware Tablet Item (`mdt_tablet`)**:
+  - MDT is operated exclusively through the in-game tablet item (usable anywhere and inside vehicles).
+  - Realistic 3D prop holding animation on foot.
+- 🗺️ **Full HD Tactical GPS Live Map (Leaflet.js)**:
+  - High-resolution (8192x8192) offline GTA V satellite vector map.
+  - Real-time GPS beacon tracking for on-duty Police and EMS units (patrol vehicle vs. foot status, heading angle, job grade).
+  - Quick camera jump controls: Los Santos, Sandy Shores, Paleto Bay.
+  - One-click GPS navigation waypoint setting to any officer or emergency call.
+- 🎯 **Stalker Dual DSR Police Speed Radar HUD**:
+  - Integrated police vehicle radar scanning front and rear targets via native shape-test capsules.
+  - Patrol speed, Target speed, and real-time license plate detection.
+  - **Fast Lock**: Lock fast targets with `NUMPAD8` (`/radarlock`) with audible front-end audio alerts.
+  - **Auto Power-Save**: When an officer steps out of the vehicle, the radar instantly hides. When re-entering the driver seat, scanning resumes seamlessly.
+  - **Custom HUD Positioning (`/radarset` & `/radarreset`)**: Each officer can drag & drop the radar anywhere on their screen. Persists per-client and resets cleanly to default upon server restart.
+- 🪪 **Citizen Management & License Registry**:
+  - Search citizens by name, surname, or citizen ID.
+  - Direct license management: view, grant, and revoke driver (Class B), motorcycle (Class A), truck (Class C), and weapon licenses directly in MDT (`user_licenses`).
+  - Full criminal convictions record, mugshot URL, and confidential officer notes.
+- 🚘 **DMV Vehicle Database**:
+  - Instant plate search, registered owner profile shortcut, stolen flag toggle, and vehicle notes.
+- ⚖️ **Incidents, Reports & Multilingual Penal Code**:
+  - Multi-suspect and officer incident logging.
+  - Fully categorized penal code (Traffic, Public Order, Property, Violence, Drugs & Weapons) translated into English, Czech, and German.
+  - Automatic calculation of cumulative fines and prison terms with automatic bill/jail dispatching.
+- 📜 **Warrants & BOLO Alerts**:
+  - Issue active arrest warrants and urgent BOLO broadcasts for dangerous individuals or vehicles.
+- 📻 **911 Dispatch Feed**:
+  - Real-time dispatch call feed with direct GPS targeting.
+
+---
+
+## ✨ Klíčové funkce (Česky)
+
+- 📱 **Realistický tablet (`mdt_tablet`)**:
+  - MDT se otevírá výhradně pomocí položky v inventáři (jak pěšky s animací držení tabletu v ruce, tak i uvnitř vozidla).
+- 🗺️ **Taktická Full HD GPS mapa (Leaflet.js)**:
+  - Kompletní offline GTA V mapa ve vysokém rozlišení 8192x8192 bez nutnosti externích webových závislostí.
+  - Živé sledování hlídek Policie a záchranářů EMS v reálném čase (ve voze / pěší, úhel natočení, hodnost).
+  - Tlačítka pro rychlé zaměření: Los Santos, Sandy Shores, Paleto Bay a GPS zaměření libovolné jednotky.
+- 🎯 **Policejní duální radar Stalker DSR**:
+  - Měření rychlosti předního i zadního cíle (přední a zadní anténa) a čtení SPZ.
+  - Uzamknutí rychlosti: klávesa `NUMPAD8` (`/radarlock`) se zvukovým signálem.
+  - **Inteligentní skrytí**: při vystoupení z vozu se radar automaticky skryje a po nastoupení zpět na sedadlo řidiče opět aktivuje.
+  - **Vlastní pozice (`/radarset` a `/radarreset`)**: každý hráč si může radar přetáhnout myší kamkoliv na obrazovku. Pozice se po restartu serveru bezpečně vrací do výchozího stavu.
+- 🪪 **Evidence občanů a správa licencí**:
+  - Vyhledávání osob, fotografie (mugshot), trestní rejstřík a poznámky.
+  - Možnost přímo z karty občana udělovat a odebírat licence (řidičský průkaz sk. B, A, C i zbrojní průkaz).
+- 🚘 **Registr vozidel DMV**:
+  - Kontrola SPZ, propojení na majitele, označení odcizeného vozidla a poznámky.
+- ⚖️ **Incidenty a kompletní trestní sazebník**:
+  - Vyšetřovací spisy, automatický výpočet pokuty a měsíců vězení, automatické stržení pokuty z účtu.
+  - Plně lokalizovaný trestní sazebník v `shared/penal_code.lua`.
+- 📜 **Zatykače a BOLO pátrání**:
+  - Vystavování a správa aktivních zatykačů a BOLO hlášení po vozidlech/osobách.
 
 ---
 
@@ -68,69 +90,76 @@
 
 ## 🚀 Instalace / Installation
 
-1. **Stáhněte** nebo naklonujte repozitář do složky `resources/[pt_scripts]/pt_mdt`:
-   ```bash
-   cd resources/[pt_scripts]
-   git clone https://github.com/it-petrfila/pt_mdt.git
-   ```
+### 1. Stažení
+Naklonujte repozitář do složky `resources/[pt_scripts]/pt_mdt`:
+```bash
+cd resources/[pt_scripts]
+git clone https://github.com/it-petrfila/pt_mdt.git
+```
 
-2. **Importujte databázové schéma**:
-   Spusťte soubor `install.sql` ve vašem databázovém nástroji (např. HeidiSQL nebo phpMyAdmin) v databázi FiveM serveru.
+### 2. Databáze
+Spusťte soubor `install.sql` ve vašem databázovém manažeru (HeidiSQL / phpMyAdmin), nebo nechte skript vytvořit tabulky automaticky při prvním spuštění serveru.
 
-3. **Přidejte položku do `ox_inventory/data/items.lua`**:
-   ```lua
-   ['mdt_tablet'] = {
-       label = 'Police MDT Tablet',
-       weight = 1000,
-       stack = false,
-       close = true,
-       description = 'Mobilní policejní terminál pro přístup k evidenci občanů, vozidel a zatykačů.'
-   },
-   ```
+### 3. Položka v `ox_inventory`
+Přidejte definici položky do `ox_inventory/data/items.lua`:
+```lua
+['mdt_tablet'] = {
+    label = 'Police MDT Tablet',
+    weight = 1000,
+    stack = false,
+    close = true,
+    description = 'Mobilní policejní terminál pro přístup k evidenci občanů, vozidel a zatykačů.',
+    client = {
+        image = 'mdt_tablet.png'
+    }
+},
+```
 
-4. **Zkopírujte ikonu položky**:
-   Zkopírujte soubor `web/img/mdt_tablet.png` do `resources/ox_inventory/web/images/mdt_tablet.png`.
+### 4. Obrázek položky
+Zkopírujte přiložený obrázek `mdt_tablet.png` z kořenové složky skriptu do:
+```
+resources/ox_inventory/web/images/mdt_tablet.png
+```
 
-5. **Spusťte skript v `server.cfg`**:
-   ```cfg
-   ensure ox_lib
-   ensure oxmysql
-   ensure ox_inventory
-   ensure pt_mdt
-   ```
+### 5. Spuštění v `server.cfg`
+```cfg
+ensure ox_lib
+ensure oxmysql
+ensure ox_inventory
+ensure pt_mdt
+```
 
 ---
 
-## ⚙️ Konfigurace / Configuration
+## 🎮 Klávesové zkratky a příkazy / Commands & Controls
 
-Veškeré nastavení se provádí v souboru `shared/config.lua`:
+| Příkaz / Klávesa | Popis (CS) | Description (EN) |
+|---|---|---|
+| `mdt_tablet` (Item) | Otevře policejní tablet | Opens police MDT tablet |
+| `NUMPAD9` / `/radar` | Zapne / vypne policejní radar | Toggles speed radar on/off |
+| `NUMPAD8` / `/radarlock` | Uzamkne změřenou rychlost cíle | Locks target speed |
+| `/radarset` | Umožní přetáhnout radar myší | Allows dragging radar HUD |
+| `/radarreset` | Vrátí radar do výchozí pozice | Resets radar HUD position |
+
+---
+
+## ⚙️ Konfigurace / Configuration (`shared/config.lua`)
 
 ```lua
-Config.Locale = 'cs' -- Volby: 'cs', 'en', 'de'
+Config.Locale = 'cs' -- 'cs' | 'en' | 'de'
 
--- Povolení zaměstnání
 Config.AllowedJobs = {
     ['police'] = { label = 'Police Department', badge = 'LSPD', canIssueWarrant = true, canSendToJail = true },
     ['sheriff'] = { label = 'Sheriff Office', badge = 'LSSD', canIssueWarrant = true, canSendToJail = true }
-}
-
--- Nastavení otevírání
-Config.OpenOptions = {
-    Command = 'mdt',
-    Keybind = 'F5',
-    RequireItem = true,
-    AllowInPoliceVehicleWithoutItem = true,
 }
 ```
 
 ---
 
-## 📡 API a Exporty pro vývojáře
-
-Pro odeslání nového hlášení na dispečink z jiného skriptu (např. systém loupeží):
+## 📡 API / Exporty
 
 ```lua
--- Na straně serveru:
+-- Odeslání tísňového volání z jiného skriptu (Server-side)
 exports['pt_mdt']:SendDispatch({
     code = '10-31',
     title = 'Přepadení klenotnictví',
@@ -143,7 +172,5 @@ exports['pt_mdt']:SendDispatch({
 ---
 
 ## 📜 Licence
-
-Tento projekt je licencován pod licencí MIT - viz soubor [LICENSE](LICENSE).
-
-Vyvinuto od **pt_scripts (it-petrfila)**.
+Tento projekt je licencován pod licencí MIT - viz soubor [LICENSE](LICENSE).  
+Vyvinuto pro komunitu od **pt_scripts (it-petrfila)**.

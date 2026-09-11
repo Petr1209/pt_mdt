@@ -1,7 +1,7 @@
 Config = {}
 
 -- Jazyk rozhraní: 'cs' | 'en' | 'de'
-Config.Locale = 'cs'
+Config.Locale = 'en'
 
 -- Povolení zaměstnání (frakce) a jejich označení
 Config.AllowedJobs = {

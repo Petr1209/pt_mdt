@@ -87,6 +87,10 @@ function openMDT(data) {
     document.getElementById('stat-bolos').textContent = data.boloCount || 0;
     document.getElementById('stat-incidents').textContent = data.incidentCount || 0;
 
+    if (data.bootTime) {
+        checkServerBoot(data.bootTime);
+    }
+
     applyLocales();
     renderBulletins(data.bulletins || []);
     renderRecentIncidents(data.recentIncidents || []);
@@ -116,6 +120,10 @@ window.addEventListener('message', (event) => {
     const item = event.data;
     if (item.action === 'open') {
         openMDT(item.data);
+    } else if (item.action === 'initSession') {
+        checkServerBoot(item.bootTime);
+    } else if (item.action === 'resetRadarPosition') {
+        resetRadarPosition();
     } else if (item.action === 'close') {
         const tabletWrapper = document.querySelector('.tablet-wrapper');
         if (tabletWrapper) {
@@ -260,7 +268,7 @@ function renderCitizenSearchResults(results) {
                     <div style="font-size: 12px; color: var(--text-secondary);">DOB: ${c.dateofbirth || '-'} • Tel: ${c.phone_number || '-'}</div>
                 </div>
             </div>
-            <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;">Zobrazit kartu</button>
+            <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;">${t('view_card', 'Zobrazit kartu')}</button>
         `;
         item.addEventListener('click', () => loadCitizenProfile(c.identifier));
         list.appendChild(item);
@@ -287,15 +295,31 @@ async function loadCitizenProfile(identifier) {
     document.getElementById('c-job').textContent = `${p.job_label || p.job} (${p.grade_label || p.job_grade})`;
     document.getElementById('c-phone').textContent = p.phone_number || '-';
 
-    // Licence
+    // Licence (s možností odebrání)
     const licContainer = document.getElementById('citizen-licenses-list');
     licContainer.innerHTML = '';
     if (data.licenses && data.licenses.length > 0) {
         data.licenses.forEach(l => {
-            licContainer.innerHTML += `<span class="tag-badge green">${escapeHtml(l.label || l.type)}</span>`;
+            const badge = document.createElement('div');
+            badge.className = 'tag-badge green';
+            badge.style.display = 'inline-flex';
+            badge.style.alignItems = 'center';
+            badge.style.gap = '6px';
+            badge.innerHTML = `
+                <span>${escapeHtml(l.label || l.type)}</span>
+                <span class="revoke-lic-btn" style="cursor: pointer; opacity: 0.75; font-weight: bold; padding: 0 3px;" title="${t('revoke_license', 'Odebrat')}">✕</span>
+            `;
+            badge.querySelector('.revoke-lic-btn').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const ok = await postNUI('removeLicense', { identifier: p.identifier, type: l.type });
+                if (ok) {
+                    loadCitizenProfile(p.identifier);
+                }
+            });
+            licContainer.appendChild(badge);
         });
     } else {
-        licContainer.innerHTML = `<span style="color: var(--text-muted); font-size: 13px;">Žádné evidované licence</span>`;
+        licContainer.innerHTML = `<span style="color: var(--text-muted); font-size: 13px;">${t('no_licenses', 'Žádné evidované licence')}</span>`;
     }
 
     // Trestní rejstřík
@@ -317,8 +341,31 @@ async function loadCitizenProfile(identifier) {
             `;
         });
     } else {
-        convList.innerHTML = `<span style="color: var(--text-muted); font-size: 13px; padding: 6px;">Čistý trestní rejstřík</span>`;
+        convList.innerHTML = `<span style="color: var(--text-muted); font-size: 13px; padding: 6px;">${t('clean_record', 'Čistý trestní rejstřík')}</span>`;
     }
+}
+
+// Otevření a potvrzení přidání licence
+const btnOpenAddLic = document.getElementById('btn-open-add-license');
+if (btnOpenAddLic) {
+    btnOpenAddLic.addEventListener('click', () => {
+        if (!State.selectedCitizen || !State.selectedCitizen.profile) return;
+        openModal('modal-add-license');
+    });
+}
+
+const btnConfirmAddLic = document.getElementById('btn-confirm-add-license');
+if (btnConfirmAddLic) {
+    btnConfirmAddLic.addEventListener('click', async () => {
+        if (!State.selectedCitizen || !State.selectedCitizen.profile) return;
+        const identifier = State.selectedCitizen.profile.identifier;
+        const type = document.getElementById('license-type-select').value;
+        const success = await postNUI('addLicense', { identifier, type });
+        if (success) {
+            closeAllModals();
+            loadCitizenProfile(identifier);
+        }
+    });
 }
 
 document.getElementById('btn-save-citizen').addEventListener('click', async () => {
@@ -746,7 +793,7 @@ async function loadDispatch() {
     list.innerHTML = '';
 
     if (!calls || calls.length === 0) {
-        list.innerHTML = `<div style="color: var(--text-muted); padding: 12px;">Žádná aktivní tísňová volání.</div>`;
+        list.innerHTML = `<div style="color: var(--text-muted); padding: 12px;">${t('no_dispatch_calls', 'Žádná aktivní tísňová volání.')}</div>`;
         return;
     }
 
@@ -761,7 +808,7 @@ async function loadDispatch() {
                     <span style="font-size: 12px; color: var(--text-muted);">${c.time}</span>
                 </div>
                 <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">${escapeHtml(c.message)}</div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Volající: ${escapeHtml(c.caller)}</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${t('caller', 'Volající')}: ${escapeHtml(c.caller)}</div>
             </div>
             <button class="btn-primary" style="font-size: 12px;">${t('set_waypoint', 'GPS Cíl')}</button>
         `;
@@ -931,7 +978,7 @@ function renderTacticalUnits(units) {
                 <div style="font-size: 12px; min-width: 170px; line-height: 1.5;">
                     <div style="font-weight: 700; color: #38bdf8; font-size: 14px;">${escapeHtml(unit.name)}</div>
                     <div style="color: #94a3b8; font-size: 11px;">${escapeHtml(unit.jobLabel)} - ${escapeHtml(unit.grade)}</div>
-                    <div style="color: #cbd5e1; margin-top: 4px;">Stav: ${unit.inVehicle ? '🚔 Ve vozidle' : '🚶 Pěší hlídka'}</div>
+                    <div style="color: #cbd5e1; margin-top: 4px;">${t('status', 'Stav')}: ${unit.inVehicle ? ('🚔 ' + t('in_vehicle', 'Ve voze')) : ('🚶 ' + t('on_foot', 'Pěší'))}</div>
                     <button id="btn-popup-gps-${id}" class="btn-primary" style="margin-top: 8px; width: 100%; font-size: 11px; padding: 4px 8px;">
                         🎯 ${t('set_waypoint', 'Zaměřit GPS')}
                     </button>
@@ -961,11 +1008,11 @@ function renderTacticalUnits(units) {
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary);">
                 <span>${t('rank', 'Hodnost')}: <strong style="color: var(--text-primary);">${escapeHtml(unit.grade)}</strong></span>
-                <span>${unit.inVehicle ? '🚔 Ve voze' : '🚶 Pěší'}</span>
+                <span>${unit.inVehicle ? ('🚔 ' + t('in_vehicle', 'Ve voze')) : ('🚶 ' + t('on_foot', 'Pěší'))}</span>
             </div>
             <div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px;">
                 <button class="btn-secondary btn-card-focus" style="font-size: 11px; padding: 4px 8px;">
-                    🔍 Pohled
+                    🔍 ${t('view_focus', 'Pohled')}
                 </button>
                 <button class="btn-primary btn-card-gps" style="font-size: 11px; padding: 4px 8px;">
                     🎯 ${t('set_waypoint', 'GPS')}
@@ -1004,6 +1051,27 @@ if (btnRefreshMap) {
 // ==========================================
 let radarIsDragging = false;
 let radarDragOffset = { x: 0, y: 0 };
+
+function checkServerBoot(bootTime) {
+    if (!bootTime) return;
+    const storedBoot = localStorage.getItem('pt_mdt_server_boot');
+    if (storedBoot && String(storedBoot) !== String(bootTime)) {
+        // Server restart detected: reset radar position to default
+        resetRadarPosition();
+    }
+    localStorage.setItem('pt_mdt_server_boot', String(bootTime));
+}
+
+function resetRadarPosition() {
+    localStorage.removeItem('pt_mdt_radar_pos');
+    const radar = document.getElementById('police-radar-hud');
+    if (radar) {
+        radar.style.left = '';
+        radar.style.top = '';
+        radar.style.bottom = '30px';
+        radar.style.right = '30px';
+    }
+}
 
 function initRadarDraggable() {
     const radar = document.getElementById('police-radar-hud');

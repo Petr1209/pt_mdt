@@ -1,4 +1,5 @@
 local ESX = exports['es_extended']:getSharedObject()
+local ServerBootTime = os.time()
 
 -- Automatická inicializace databázových tabulek při startu skriptu
 MySQL.ready(function()
@@ -282,7 +283,8 @@ lib.callback.register('pt_mdt:getInitialData', function(src)
         bulletins = bulletins,
         recentIncidents = recentIncidents,
         penalCode = GetLocalizedPenalCode(),
-        locales = GetCurrentLocaleTable()
+        locales = GetCurrentLocaleTable(),
+        bootTime = ServerBootTime
     }
 end)
 
@@ -342,4 +344,10 @@ lib.callback.register('pt_mdt:getLiveUnits', function(src)
     end
 
     return units
+end)
+
+-- Synchronizace času restartu serveru pro automatický reset pozice radaru
+RegisterNetEvent('pt_mdt:requestBootTime', function()
+    local src = source
+    TriggerClientEvent('pt_mdt:syncBootTime', src, ServerBootTime)
 end)

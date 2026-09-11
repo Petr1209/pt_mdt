@@ -190,7 +190,7 @@
                     <div class="search-container">
                         <div class="search-input-wrapper">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <input type="text" id="citizen-search-input" class="search-input" placeholder="Hledat občana podle jména, příjmení nebo ID...">
+                            <input type="text" id="citizen-search-input" class="search-input" placeholder="Hledat občana podle jména, příjmení nebo ID..." data-i18n="search_citizen_placeholder">
                         </div>
                         <button class="btn-primary" id="btn-citizen-search" data-i18n="search">Hledat</button>
                     </div>
@@ -198,8 +198,8 @@
                     <div id="citizen-search-results" class="item-list" style="margin-bottom: 24px;">
                         <div style="color: var(--text-muted); padding: 40px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: var(--accent-cyan);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            <p style="font-size: 15px; font-weight: 600; color: var(--text-primary);">Policejní registr občanů NCIC</p>
-                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Zadejte jméno nebo rodné číslo pro vyhledání osoby a zobrazení trestního rejstříku.</p>
+                            <p style="font-size: 15px; font-weight: 600; color: var(--text-primary);" data-i18n="ncic_registry">Policejní registr občanů NCIC</p>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;" data-i18n="ncic_desc">Zadejte jméno nebo rodné číslo pro vyhledání osoby a zobrazení trestního rejstříku.</p>
                         </div>
                     </div>
 
@@ -224,6 +224,7 @@
                             <div class="panel-card">
                                 <div class="panel-header">
                                     <h2 data-i18n="licenses">Licence a průkazy</h2>
+                                    <button class="btn-primary" id="btn-open-add-license" style="padding: 4px 10px; font-size: 12px;" data-i18n="add_license">+ Přidat licenci</button>
                                 </div>
                                 <div id="citizen-licenses-list" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
                             </div>
@@ -260,7 +261,7 @@
                     <div class="search-container">
                         <div class="search-input-wrapper">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <input type="text" id="vehicle-search-input" class="search-input" placeholder="Zadejte SPZ (Plate)...">
+                            <input type="text" id="vehicle-search-input" class="search-input" placeholder="Zadejte SPZ (Plate)..." data-i18n="search_vehicle_placeholder">
                         </div>
                         <button class="btn-primary" id="btn-vehicle-search" data-i18n="search">Hledat</button>
                     </div>
@@ -268,8 +269,8 @@
                     <div id="vehicle-search-results" class="item-list" style="margin-bottom: 24px;">
                         <div style="color: var(--text-muted); padding: 40px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: var(--accent-cyan);"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                            <p style="font-size: 15px; font-weight: 600; color: var(--text-primary);">Registr motorových vozidel DMV</p>
-                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Vyhledejte vozidlo podle SPZ pro kontrolu majitele a statusu odcizení.</p>
+                            <p style="font-size: 15px; font-weight: 600; color: var(--text-primary);" data-i18n="dmv_registry">Registr motorových vozidel DMV</p>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;" data-i18n="dmv_desc">Vyhledejte vozidlo podle SPZ pro kontrolu majitele a statusu odcizení.</p>
                         </div>
                     </div>
 
@@ -488,6 +489,29 @@
             <div class="modal-footer">
                 <button class="btn-secondary modal-close" data-i18n="cancel">Zrušit</button>
                 <button class="btn-primary" id="btn-save-bolo" data-i18n="save">Vyhlásit BOLO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add License -->
+    <div class="modal-overlay" id="modal-add-license">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 data-i18n="add_license">Udělit licenci</h3>
+                <button class="close-btn modal-close">&times;</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="license_type">Typ licence:</label>
+                <select id="license-type-select" class="form-select">
+                    <option value="drive">Řidičský průkaz sk. B (drive)</option>
+                    <option value="drive_bike">Řidičský průkaz sk. A - Motocykl (drive_bike)</option>
+                    <option value="drive_truck">Řidičský průkaz sk. C - Nákladní (drive_truck)</option>
+                    <option value="weapon">Zbrojní průkaz (weapon)</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-close" data-i18n="cancel">Zrušit</button>
+                <button class="btn-primary" id="btn-confirm-add-license" data-i18n="save">Udělit</button>
             </div>
         </div>
     </div>
