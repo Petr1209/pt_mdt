@@ -189,6 +189,11 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: auto;
+    z-index: 10;
     transition: all 0.2s;
 }
 

@@ -246,7 +246,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label data-i18n="notes">Poznámky:</label>
-                                    <textarea id="citizen-edit-notes" class="form-textarea" placeholder="Záznamy o chování, tetování, charakteristiky..."></textarea>
+                                    <textarea id="citizen-edit-notes" class="form-textarea" placeholder="Záznamy o chování, tetování, charakteristiky..." data-i18n-placeholder="citizen_notes_placeholder"></textarea>
                                 </div>
                                 <div style="display: flex; justify-content: flex-end;">
                                     <button class="btn-primary" id="btn-save-citizen" data-i18n="save">Uložit změny</button>
@@ -296,7 +296,7 @@
                             <div>
                                 <div class="form-group">
                                     <label data-i18n="notes">Policejní poznámky k vozidlu:</label>
-                                    <textarea id="v-notes" class="form-textarea" placeholder="Popis poškození, úpravy, záznamy..."></textarea>
+                                    <textarea id="v-notes" class="form-textarea" placeholder="Popis poškození, úpravy, záznamy..." data-i18n-placeholder="vehicle_notes_placeholder"></textarea>
                                 </div>
                                 <div style="display: flex; justify-content: flex-end;">
                                     <button class="btn-primary" id="btn-save-vehicle" data-i18n="save">Uložit stav vozidla</button>
@@ -311,7 +311,7 @@
                     <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                         <div class="search-input-wrapper" style="width: 400px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <input type="text" id="incidents-search-input" class="search-input" placeholder="Filtrovat incidenty podle názvu...">
+                            <input type="text" id="incidents-search-input" class="search-input" placeholder="Filtrovat incidenty podle názvu..." data-i18n-placeholder="filter_incidents_placeholder">
                         </div>
                         <button class="btn-primary" id="btn-open-new-incident" data-i18n="create_incident">+ Založit nový incident</button>
                     </div>
@@ -340,7 +340,7 @@
                 <div class="tab-view" id="tab-penalcode">
                     <div class="panel-header">
                         <h2 data-i18n="penal_code">Trestní sazebník</h2>
-                        <input type="text" id="penal-search" class="form-input" style="width: 300px;" placeholder="Hledat v sazebníku...">
+                        <input type="text" id="penal-search" class="form-input" style="width: 300px;" placeholder="Hledat v sazebníku..." data-i18n-placeholder="search_penal_placeholder">
                     </div>
                     <div id="penal-code-container" style="display: flex; flex-direction: column; gap: 20px;"></div>
                 </div>
@@ -362,23 +362,23 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 data-i18n="add_bulletin">Přidat oznámení</h3>
-                <button class="close-btn modal-close">&times;</button>
+                <button class="close-btn modal-close" onclick="closeAllModals()">&times;</button>
             </div>
             <div class="form-group">
                 <label data-i18n="title">Nadpis:</label>
-                <input type="text" id="b-title" class="form-input" placeholder="Důležité upozornění...">
+                <input type="text" id="b-title" class="form-input" placeholder="Důležité upozornění..." data-i18n-placeholder="bulletin_title_placeholder">
             </div>
             <div class="form-group">
                 <label data-i18n="description">Zpráva:</label>
-                <textarea id="b-message" class="form-textarea" placeholder="Text oznámení pro sbor..."></textarea>
+                <textarea id="b-message" class="form-textarea" placeholder="Text oznámení pro sbor..." data-i18n-placeholder="bulletin_desc_placeholder"></textarea>
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
-                    <input type="checkbox" id="b-pinned"> Připnout na začátek nástěnky
+                    <input type="checkbox" id="b-pinned"> <span data-i18n="bulletin_pin">Připnout na začátek nástěnky</span>
                 </label>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary modal-close" data-i18n="cancel">Zrušit</button>
+                <button class="btn-secondary modal-close" onclick="closeAllModals()" data-i18n="cancel">Zrušit</button>
                 <button class="btn-primary" id="btn-save-bulletin" data-i18n="save">Zveřejnit</button>
             </div>
         </div>
@@ -389,22 +389,22 @@
         <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
                 <h3 data-i18n="create_incident">Založit nový incident</h3>
-                <button class="close-btn modal-close">&times;</button>
+                <button class="close-btn modal-close" onclick="closeAllModals()">&times;</button>
             </div>
             <div class="form-group">
                 <label data-i18n="incident_title">Název incidentu:</label>
-                <input type="text" id="inc-title" class="form-input" placeholder="Např. Ozbrojené přepadení obchodu 24/7">
+                <input type="text" id="inc-title" class="form-input" placeholder="Např. Ozbrojené přepadení obchodu 24/7" data-i18n-placeholder="incident_title_placeholder">
             </div>
             <div class="form-group">
                 <label data-i18n="description">Popis události:</label>
-                <textarea id="inc-desc" class="form-textarea" placeholder="Průběh zásahu, čas, okolnosti..."></textarea>
+                <textarea id="inc-desc" class="form-textarea" placeholder="Průběh zásahu, čas, okolnosti..." data-i18n-placeholder="incident_desc_placeholder"></textarea>
             </div>
             
             <div class="panel-card" style="margin-bottom: 14px;">
                 <h4 style="color: var(--text-primary); margin-bottom: 8px;" data-i18n="suspects_involved">Podezřelí</h4>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="inc-suspect-search" class="form-input" style="flex: 1;" placeholder="Vyhledat a přidat podezřelého...">
-                    <button class="btn-secondary" id="btn-add-suspect">+ Přidat</button>
+                    <input type="text" id="inc-suspect-search" class="form-input" style="flex: 1;" placeholder="Vyhledat a přidat podezřelého..." data-i18n-placeholder="suspect_search_placeholder">
+                    <button class="btn-secondary" id="btn-add-suspect" data-i18n="add">+ Přidat</button>
                 </div>
                 <div id="inc-suspects-list"></div>
             </div>
@@ -412,7 +412,7 @@
             <div class="panel-card" style="margin-bottom: 14px;">
                 <h4 style="color: var(--text-primary); margin-bottom: 8px;" data-i18n="charges_selected">Přiřadit obvinění z trestního sazebníku</h4>
                 <select id="inc-charge-select" class="form-select" style="width: 100%; margin-bottom: 10px;"></select>
-                <button class="btn-secondary" id="btn-add-charge">+ Přidat obvinění</button>
+                <button class="btn-secondary" id="btn-add-charge" data-i18n="add_charge">+ Přidat obvinění</button>
                 <div id="inc-charges-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;"></div>
             </div>
 
@@ -428,7 +428,7 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn-secondary modal-close" data-i18n="cancel">Zrušit</button>
+                <button class="btn-secondary modal-close" onclick="closeAllModals()" data-i18n="cancel">Zrušit</button>
                 <button class="btn-primary" id="btn-save-incident" data-i18n="apply_punishment">Zaúčtovat a uložit incident</button>
             </div>
         </div>
@@ -439,18 +439,18 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 data-i18n="create_warrant">Vydat zatykač</h3>
-                <button class="close-btn modal-close">&times;</button>
+                <button class="close-btn modal-close" onclick="closeAllModals()">&times;</button>
             </div>
             <div class="form-group">
                 <label data-i18n="firstname">Jméno podezřelé osoby:</label>
-                <input type="text" id="w-suspect-name" class="form-input" placeholder="Jméno a příjmení">
+                <input type="text" id="w-suspect-name" class="form-input" placeholder="Jméno a příjmení" data-i18n-placeholder="warrant_name_placeholder">
             </div>
             <div class="form-group">
                 <label data-i18n="warrant_reason">Důvod vydání zatykače / obvinění:</label>
-                <textarea id="w-reason" class="form-textarea" placeholder="Specifikujte trestný čin a důvody pro zadržení..."></textarea>
+                <textarea id="w-reason" class="form-textarea" placeholder="Specifikujte trestný čin a důvody pro zadržení..." data-i18n-placeholder="warrant_reason_placeholder"></textarea>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary modal-close" data-i18n="cancel">Zrušit</button>
+                <button class="btn-secondary modal-close" onclick="closeAllModals()" data-i18n="cancel">Zrušit</button>
                 <button class="btn-primary" id="btn-save-warrant" data-i18n="save">Vystavit zatykač</button>
             </div>
         </div>
@@ -461,7 +461,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 data-i18n="create_bolo">Vyhlásit BOLO pátrání</h3>
-                <button class="close-btn modal-close">&times;</button>
+                <button class="close-btn modal-close" onclick="closeAllModals()">&times;</button>
             </div>
             <div class="form-group">
                 <label data-i18n="bolo_type">Typ pátrání:</label>
@@ -472,22 +472,22 @@
             </div>
             <div class="form-group">
                 <label data-i18n="bolo_title">Předmět pátrání / Titulek:</label>
-                <input type="text" id="bolo-title" class="form-input" placeholder="Např. Černý Sultan - ozbrojená posádka">
+                <input type="text" id="bolo-title" class="form-input" placeholder="Např. Černý Sultan - ozbrojená posádka" data-i18n-placeholder="bolo_subject_placeholder">
             </div>
             <div class="form-group" id="bolo-plate-group" style="display: none;">
                 <label data-i18n="plate">SPZ Vozidla:</label>
-                <input type="text" id="bolo-plate" class="form-input" placeholder="SPZ...">
+                <input type="text" id="bolo-plate" class="form-input" placeholder="SPZ..." data-i18n-placeholder="bolo_plate_placeholder">
             </div>
             <div class="form-group" id="bolo-person-group">
                 <label data-i18n="firstname">Jméno hledané osoby (pokud známo):</label>
-                <input type="text" id="bolo-person" class="form-input" placeholder="Jméno a příjmení...">
+                <input type="text" id="bolo-person" class="form-input" placeholder="Jméno a příjmení..." data-i18n-placeholder="bolo_name_placeholder">
             </div>
             <div class="form-group">
                 <label data-i18n="description">Podrobný popis:</label>
-                <textarea id="bolo-desc" class="form-textarea" placeholder="Popis oblečení, směru jízdy, nebezpečnosti..."></textarea>
+                <textarea id="bolo-desc" class="form-textarea" placeholder="Popis oblečení, směru jízdy, nebezpečnosti..." data-i18n-placeholder="bolo_desc_placeholder"></textarea>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary modal-close" data-i18n="cancel">Zrušit</button>
+                <button class="btn-secondary modal-close" onclick="closeAllModals()" data-i18n="cancel">Zrušit</button>
                 <button class="btn-primary" id="btn-save-bolo" data-i18n="save">Vyhlásit BOLO</button>
             </div>
         </div>
@@ -498,7 +498,7 @@
         <div class="modal-content" style="max-width: 440px;">
             <div class="modal-header">
                 <h3 data-i18n="add_license">Udělit licenci</h3>
-                <button class="close-btn modal-close">&times;</button>
+                <button class="close-btn modal-close" onclick="closeAllModals()">&times;</button>
             </div>
             <div class="form-group">
                 <label data-i18n="license_type">Typ licence:</label>
@@ -510,7 +510,7 @@
                 </select>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary modal-close" data-i18n="cancel">Zrušit</button>
+                <button class="btn-secondary modal-close" onclick="closeAllModals()" data-i18n="cancel">Zrušit</button>
                 <button class="btn-primary" id="btn-confirm-add-license" data-i18n="save">Udělit</button>
             </div>
         </div>

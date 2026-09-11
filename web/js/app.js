@@ -39,6 +39,20 @@ function applyLocales() {
             }
         }
     });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (State.locales[key]) {
+            el.placeholder = State.locales[key];
+        }
+    });
+
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        if (State.locales[key]) {
+            el.title = State.locales[key];
+        }
+    });
 }
 
 function t(key, fallback = '') {
@@ -174,8 +188,12 @@ function closeAllModals() {
     });
 }
 
-document.querySelectorAll('.modal-close').forEach(btn => {
-    btn.addEventListener('click', closeAllModals);
+// Spolehlivé zavírání oken přes delegaci událostí
+document.addEventListener('click', (e) => {
+    const closeBtn = e.target.closest('.modal-close') || e.target.closest('.close-btn');
+    if (closeBtn && !closeBtn.closest('#btn-close-mdt') && !closeBtn.classList.contains('revoke-lic-btn')) {
+        closeAllModals();
+    }
 });
 
 // ==========================================
